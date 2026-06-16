@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Backlog</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <main class="app-shell" aria-labelledby="app-title">
+      <section class="panel">
+        <header class="top-bar">
+          <button
+            class="icon-button calendar-toggle"
+            id="calendarToggle"
+            type="button"
+            aria-label="Open calendar"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h1V3a1 1 0 0 1 1-1Zm13 8H4v9a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-9ZM5 6a1 1 0 0 0-1 1v1h16V7a1 1 0 0 0-1-1H5Z" />
+            </svg>
+          </button>
+
+          <div class="day-switcher">
+            <button class="icon-button" id="previousDay" type="button" aria-label="Previous day">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M15.7 5.3a1 1 0 0 1 0 1.4L10.41 12l5.3 5.3a1 1 0 0 1-1.42 1.4l-6-6a1 1 0 0 1 0-1.4l6-6a1 1 0 0 1 1.42 0Z" />
+              </svg>
+            </button>
+            <div class="date-heading">
+              <p class="eyebrow" id="app-title">Backlog</p>
+              <h1 id="selectedDate">Tuesday, June 16</h1>
+            </div>
+            <button class="icon-button" id="nextDay" type="button" aria-label="Next day">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M8.3 18.7a1 1 0 0 1 0-1.4l5.29-5.3-5.3-5.3A1 1 0 1 1 9.72 5.3l6 6a1 1 0 0 1 0 1.4l-6 6a1 1 0 0 1-1.42 0Z" />
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        <section class="stats" aria-label="Daily stats">
+          <div>
+            <span id="totalCount">0</span>
+            <p>Tasks</p>
+          </div>
+          <div>
+            <span id="completedCount">0</span>
+            <p>Done</p>
+          </div>
+          <div>
+            <span id="progressPercent">0%</span>
+            <p>Progress</p>
+          </div>
+        </section>
+
+        <section class="task-card" aria-label="Task list">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon" aria-hidden="true">✓</div>
+            <h2>No tasks yet</h2>
+            <p>Add a task below to begin this day's backlog.</p>
+          </div>
+          <ul class="task-list" id="taskList"></ul>
+        </section>
+
+        <form class="task-form" id="taskForm" autocomplete="off">
+          <label class="sr-only" for="taskInput">Add a new task</label>
+          <input id="taskInput" name="task" type="text" placeholder="Add a task and press Enter" />
+          <button type="submit">Add</button>
+        </form>
+      </section>
+    </main>
+
+    <div class="calendar-backdrop" id="calendarBackdrop" aria-hidden="true">
+      <section
+        class="calendar-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="calendarTitle"
+      >
+        <header class="calendar-header">
+          <button class="icon-button" id="previousMonth" type="button" aria-label="Previous month">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M15.7 5.3a1 1 0 0 1 0 1.4L10.41 12l5.3 5.3a1 1 0 0 1-1.42 1.4l-6-6a1 1 0 0 1 0-1.4l6-6a1 1 0 0 1 1.42 0Z" />
+            </svg>
+          </button>
+          <h2 id="calendarTitle">June 2026</h2>
+          <button class="icon-button" id="nextMonth" type="button" aria-label="Next month">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M8.3 18.7a1 1 0 0 1 0-1.4l5.29-5.3-5.3-5.3A1 1 0 1 1 9.72 5.3l6 6a1 1 0 0 1 0 1.4l-6 6a1 1 0 0 1-1.42 0Z" />
+            </svg>
+          </button>
+        </header>
+        <div class="weekdays" aria-hidden="true">
+          <span>Sun</span>
+          <span>Mon</span>
+          <span>Tue</span>
+          <span>Wed</span>
+          <span>Thu</span>
+          <span>Fri</span>
+          <span>Sat</span>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </section>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
