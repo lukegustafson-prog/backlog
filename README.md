@@ -1,8 +1,8 @@
 # Backlog
 
-A simple, modern task backlog board built with **Next.js (App Router)**, **TypeScript**, **Tailwind CSS**, and **Prisma + SQLite**.
+A clean, Notion-style **daily agenda** built with **Next.js (App Router)**, **TypeScript**, **Tailwind CSS**, and **Prisma + SQLite**.
 
-Create tasks, set their priority, and move them across columns (`Backlog → To Do → In Progress → Done`).
+Tasks behave like calendar events: each is scheduled on a day (optionally at a time), you check them off when done, and you can navigate between days with the back/forward arrows or jump to any date with the calendar picker. Adding a task opens a Google-Calendar-style dialog where you can set a time and choose whether it repeats (daily / weekly / monthly) and for how many occurrences.
 
 ## Tech stack
 
@@ -47,11 +47,13 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## API
 
-| Method   | Endpoint          | Description            |
-| -------- | ----------------- | ---------------------- |
-| `GET`    | `/api/tasks`      | List all tasks         |
-| `POST`   | `/api/tasks`      | Create a task          |
-| `PATCH`  | `/api/tasks/:id`  | Update a task          |
-| `DELETE` | `/api/tasks/:id`  | Delete a task          |
+| Method   | Endpoint                     | Description                                              |
+| -------- | ---------------------------- | -------------------------------------------------------- |
+| `GET`    | `/api/tasks?date=YYYY-MM-DD` | List tasks for a given day (omit `date` for all tasks)   |
+| `POST`   | `/api/tasks`                 | Create a task; repeating tasks materialize a series      |
+| `PATCH`  | `/api/tasks/:id`             | Update a task (e.g. toggle `completed`, edit fields)     |
+| `DELETE` | `/api/tasks/:id?scope=series`| Delete a task; `scope=series` deletes the whole series   |
+
+A repeating task is stored as multiple rows sharing a `seriesId` (one row per occurrence, up to 60), so checking one off does not affect the others.
 
 The database connection string lives in `.env` (`DATABASE_URL="file:./dev.db"`). It only points at a local SQLite file, so it is safe to commit.

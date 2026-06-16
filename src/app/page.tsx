@@ -1,7 +1,7 @@
-import Board from "@/components/Board";
+import Agenda from "@/components/Agenda";
 
 export const dynamic = "force-dynamic";
 
 export default function Home() {
-  return <Board />;
+  return <Agenda />;
 }

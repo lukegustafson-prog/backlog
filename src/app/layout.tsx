@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Backlog",
-  description: "A simple, modern task backlog board.",
+  description: "A clean daily agenda for your tasks.",
 };
 
 export default function RootLayout({
@@ -11,7 +11,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className="text-slate-100 antialiased">{children}</body>
+      <body className="bg-white text-[#37352f]">{children}</body>
     </html>
   );
 }

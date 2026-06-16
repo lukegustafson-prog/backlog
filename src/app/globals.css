@@ -3,10 +3,16 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
+html,
 body {
-  background: radial-gradient(circle at top, #1e293b 0%, #0f172a 45%, #020617 100%);
+  background: #ffffff;
+  color: #37352f;
   min-height: 100vh;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
 }

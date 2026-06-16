@@ -2,34 +2,46 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+function dayKeyToDate(key) {
+  return new Date(`${key}T00:00:00.000Z`);
+}
+
+function addDaysKey(key, amount) {
+  const d = dayKeyToDate(key);
+  d.setUTCDate(d.getUTCDate() + amount);
+  return d.toISOString().slice(0, 10);
+}
+
+const today = new Date().toISOString().slice(0, 10);
+const tomorrow = addDaysKey(today, 1);
+
 const seedTasks = [
   {
-    title: "Set up project repository",
-    description: "Initialize the codebase and configure tooling.",
-    status: "done",
-    priority: "high",
-    order: 0,
+    title: "Morning standup",
+    description: "Sync with the team on today's priorities.",
+    date: dayKeyToDate(today),
+    allDay: false,
+    time: "09:00",
   },
   {
-    title: "Design the backlog board",
-    description: "Sketch the Kanban columns and card layout.",
-    status: "in_progress",
-    priority: "medium",
-    order: 0,
+    title: "Review pull requests",
+    description: "Go through open PRs and leave feedback.",
+    date: dayKeyToDate(today),
+    allDay: true,
+    completed: true,
   },
   {
-    title: "Add drag-free status controls",
-    description: "Allow moving tasks between columns with buttons.",
-    status: "todo",
-    priority: "medium",
-    order: 0,
+    title: "Plan the next release",
+    description: "Draft the milestone scope.",
+    date: dayKeyToDate(today),
+    allDay: false,
+    time: "14:30",
   },
   {
-    title: "Write API documentation",
-    description: "Document the REST endpoints for tasks.",
-    status: "backlog",
-    priority: "low",
-    order: 0,
+    title: "Water the plants",
+    description: "",
+    date: dayKeyToDate(tomorrow),
+    allDay: true,
   },
 ];
 

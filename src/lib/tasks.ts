@@ -1,37 +1,29 @@
-export const STATUSES = ["backlog", "todo", "in_progress", "done"] as const;
-export type Status = (typeof STATUSES)[number];
+export const REPEATS = ["none", "daily", "weekly", "monthly"] as const;
+export type Repeat = (typeof REPEATS)[number];
 
-export const PRIORITIES = ["low", "medium", "high"] as const;
-export type Priority = (typeof PRIORITIES)[number];
-
-export const STATUS_LABELS: Record<Status, string> = {
-  backlog: "Backlog",
-  todo: "To Do",
-  in_progress: "In Progress",
-  done: "Done",
+export const REPEAT_LABELS: Record<Repeat, string> = {
+  none: "Does not repeat",
+  daily: "Every day",
+  weekly: "Every week",
+  monthly: "Every month",
 };
 
-export const PRIORITY_LABELS: Record<Priority, string> = {
-  low: "Low",
-  medium: "Medium",
-  high: "High",
-};
-
-export function isStatus(value: unknown): value is Status {
-  return typeof value === "string" && (STATUSES as readonly string[]).includes(value);
-}
-
-export function isPriority(value: unknown): value is Priority {
-  return typeof value === "string" && (PRIORITIES as readonly string[]).includes(value);
+export function isRepeat(value: unknown): value is Repeat {
+  return typeof value === "string" && (REPEATS as readonly string[]).includes(value);
 }
 
 export interface Task {
   id: string;
+  seriesId: string | null;
   title: string;
   description: string;
-  status: Status;
-  priority: Priority;
-  order: number;
+  /** ISO timestamp at UTC midnight of the scheduled day. */
+  date: string;
+  allDay: boolean;
+  /** "HH:MM" when not an all-day task. */
+  time: string;
+  completed: boolean;
+  repeat: Repeat;
   createdAt: string;
   updatedAt: string;
 }

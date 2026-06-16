@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { isPriority, isStatus } from "@/lib/tasks";
+import { isRepeat } from "@/lib/tasks";
+import { isValidDayKey, dayKeyToDate } from "@/lib/date";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -27,17 +28,26 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (typeof data.description === "string") {
     update.description = data.description.trim();
   }
-  if (data.status !== undefined) {
-    if (!isStatus(data.status)) {
-      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
-    }
-    update.status = data.status;
+  if (data.completed !== undefined) {
+    update.completed = Boolean(data.completed);
   }
-  if (data.priority !== undefined) {
-    if (!isPriority(data.priority)) {
-      return NextResponse.json({ error: "Invalid priority" }, { status: 400 });
+  if (data.allDay !== undefined) {
+    update.allDay = Boolean(data.allDay);
+  }
+  if (typeof data.time === "string") {
+    update.time = data.time;
+  }
+  if (data.repeat !== undefined) {
+    if (!isRepeat(data.repeat)) {
+      return NextResponse.json({ error: "Invalid repeat value" }, { status: 400 });
     }
-    update.priority = data.priority;
+    update.repeat = data.repeat;
+  }
+  if (data.date !== undefined) {
+    if (!isValidDayKey(data.date)) {
+      return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+    }
+    update.date = dayKeyToDate(data.date);
   }
 
   try {
@@ -48,11 +58,21 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   const { id } = await context.params;
+  const { searchParams } = new URL(request.url);
+  const scope = searchParams.get("scope");
+
   try {
+    if (scope === "series") {
+      const task = await prisma.task.findUnique({ where: { id } });
+      if (task?.seriesId) {
+        await prisma.task.deleteMany({ where: { seriesId: task.seriesId } });
+        return NextResponse.json({ ok: true, deleted: "series" });
+      }
+    }
     await prisma.task.delete({ where: { id } });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, deleted: "one" });
   } catch {
     return NextResponse.json({ error: "Task not found" }, { status: 404 });
   }

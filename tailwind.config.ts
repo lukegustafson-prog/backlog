@@ -9,7 +9,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        surface: "#0f172a",
+        ink: "#37352f",
+        subtle: "#787774",
+        line: "#e9e9e7",
+        hover: "#f1f1ef",
       },
     },
   },
