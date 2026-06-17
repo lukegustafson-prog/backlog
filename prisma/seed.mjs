@@ -28,11 +28,12 @@ const seedTasks = [
   { kind: "task", title: "Ship hotfix", date: d(-1), allDay: true, completed: true },
   { kind: "task", title: "Reply to customer", date: d(-1), allDay: true, completed: true },
 
-  // Today: a mix of tasks plus an event
+  // Today: scheduled tasks on the timeline, an unscheduled task, and an event
   { kind: "task", title: "Morning standup", date: d(0), allDay: false, time: "09:00", completed: false },
+  { kind: "task", title: "Plan the next release", date: d(0), allDay: false, time: "14:00", completed: false },
+  { kind: "task", title: "Write weekly report", date: d(0), allDay: true, completed: false },
   { kind: "task", title: "Review pull requests", date: d(0), allDay: true, completed: true },
-  { kind: "task", title: "Plan the next release", date: d(0), allDay: false, time: "14:30", completed: false },
-  { kind: "event", title: "Team lunch", date: d(0), allDay: false, time: "12:30" },
+  { kind: "event", title: "Team lunch", date: d(0), allDay: false, time: "12:00" },
 
   // Tomorrow
   { kind: "task", title: "Water the plants", date: d(1), allDay: true, completed: false },

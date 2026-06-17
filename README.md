@@ -4,8 +4,8 @@ A clean, Notion-style **daily agenda** built with **Next.js (App Router)**, **Ty
 
 Tasks behave like calendar events: each is scheduled on a day (optionally at a time), you check them off when done, and you can navigate between days with the back/forward arrows. There are two item kinds:
 
-- **Tasks** have a checkbox you tick off when complete.
-- **Events** are reminders with no checkbox (e.g. a lunch or appointment).
+- **Tasks** have a checkbox you tick off when complete. They start **unscheduled** above a vertical hour-by-hour **timeline**; press **Assign to time** to drop a task onto the timeline at a chosen hour.
+- **Events** are reminders with no checkbox (e.g. a lunch or appointment). Events always require a time, chosen by **hour + AM/PM**, and appear directly on the timeline.
 
 Adding an item opens a Google-Calendar-style dialog where you pick the kind, set a time, and choose how it repeats — including a **Custom** option (repeat every N days/weeks/months, pick weekdays for weekly, and end after a number of occurrences or on a date).
 

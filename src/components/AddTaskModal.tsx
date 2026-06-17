@@ -11,6 +11,7 @@ import {
   type Repeat,
 } from "@/lib/tasks";
 import { addMonthsKey, formatLongDate, weekdayOf } from "@/lib/date";
+import { from12, hourTimeString, HOURS_12, type AmPm } from "@/lib/time";
 
 export interface NewTaskPayload {
   title: string;
@@ -45,11 +46,13 @@ const UNIT_LABELS: Record<CustomUnit, string> = {
 export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModalProps) {
   const [kind, setKind] = useState<Kind>("task");
   const [title, setTitle] = useState("");
-  const [allDay, setAllDay] = useState(true);
-  const [time, setTime] = useState("09:00");
   const [repeat, setRepeat] = useState<Repeat>("none");
   const [occurrences, setOccurrences] = useState(10);
   const [saving, setSaving] = useState(false);
+
+  // Event time (hour + AM/PM only)
+  const [eventHour, setEventHour] = useState(9);
+  const [eventAmPm, setEventAmPm] = useState<AmPm>("AM");
 
   // Custom recurrence state
   const [interval, setIntervalValue] = useState(1);
@@ -78,11 +81,12 @@ export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModa
     if (!title.trim() || saving) return;
     setSaving(true);
     try {
+      const isEvent = kind === "event";
       await onCreate({
         title: title.trim(),
         date: dateKey,
-        allDay,
-        time: allDay ? "" : time,
+        allDay: !isEvent,
+        time: isEvent ? hourTimeString(from12(eventHour, eventAmPm)) : "",
         kind,
         repeat,
         occurrences,
@@ -142,33 +146,47 @@ export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModa
                 </button>
               ))}
             </div>
-            <p className="-mt-2 text-xs text-subtle">
-              {kind === "task"
-                ? "Tasks have a checkbox you can tick off."
-                : "Events are reminders without a checkbox."}
-            </p>
 
-            <div className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-sm text-subtle">When</span>
-              <label className="flex items-center gap-2 text-sm text-ink">
-                <input
-                  type="checkbox"
-                  checked={allDay}
-                  onChange={(e) => setAllDay(e.target.checked)}
-                  className="h-4 w-4 accent-[#2383e2]"
-                />
-                All day
-              </label>
-              {!allDay && (
-                <input
-                  type="time"
-                  aria-label="Time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  className="rounded-md border border-line px-2 py-1 text-sm text-ink outline-none focus:border-[#2383e2]"
-                />
-              )}
-            </div>
+            {kind === "task" ? (
+              <p className="-mt-2 flex items-center gap-2 text-xs text-subtle">
+                Tasks start unscheduled — use{" "}
+                <span className="rounded bg-hover px-1.5 py-0.5 font-medium text-ink">
+                  Assign to time
+                </span>{" "}
+                on the timeline to place them.
+              </p>
+            ) : (
+              <p className="-mt-2 text-xs text-subtle">
+                Events need a time and show on the timeline (no checkbox).
+              </p>
+            )}
+
+            {kind === "event" && (
+              <div className="flex items-center gap-3">
+                <span className="w-24 shrink-0 text-sm text-subtle">Time</span>
+                <select
+                  aria-label="Hour"
+                  value={eventHour}
+                  onChange={(e) => setEventHour(Number(e.target.value))}
+                  className="rounded-md border border-line bg-white px-2 py-1.5 text-sm text-ink outline-none focus:border-[#2383e2]"
+                >
+                  {HOURS_12.map((h) => (
+                    <option key={h} value={h}>
+                      {h}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  aria-label="AM or PM"
+                  value={eventAmPm}
+                  onChange={(e) => setEventAmPm(e.target.value as AmPm)}
+                  className="rounded-md border border-line bg-white px-2 py-1.5 text-sm text-ink outline-none focus:border-[#2383e2]"
+                >
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
+            )}
 
             <div className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-sm text-subtle">Repeat</span>
