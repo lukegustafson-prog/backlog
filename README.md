@@ -2,7 +2,14 @@
 
 A clean, Notion-style **daily agenda** built with **Next.js (App Router)**, **TypeScript**, **Tailwind CSS**, and **Prisma + SQLite**.
 
-Tasks behave like calendar events: each is scheduled on a day (optionally at a time), you check them off when done, and you can navigate between days with the back/forward arrows or jump to any date with the calendar picker. Adding a task opens a Google-Calendar-style dialog where you can set a time and choose whether it repeats (daily / weekly / monthly) and for how many occurrences.
+Tasks behave like calendar events: each is scheduled on a day (optionally at a time), you check them off when done, and you can navigate between days with the back/forward arrows. There are two item kinds:
+
+- **Tasks** have a checkbox you tick off when complete.
+- **Events** are reminders with no checkbox (e.g. a lunch or appointment).
+
+Adding an item opens a Google-Calendar-style dialog where you pick the kind, set a time, and choose how it repeats — including a **Custom** option (repeat every N days/weeks/months, pick weekdays for weekly, and end after a number of occurrences or on a date).
+
+Toggle the calendar icon to switch to a **month calendar view** that colours each day by task completion: **green** when ≥ 80% of that day's tasks are done, **yellow** at ≥ 50%, and **red** below 50%. Click any day to jump back to its agenda.
 
 ## Tech stack
 

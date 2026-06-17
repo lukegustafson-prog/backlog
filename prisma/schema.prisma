@@ -10,6 +10,7 @@ datasource db {
 model Task {
   id          String   @id @default(cuid())
   seriesId    String?
+  kind        String   @default("task")
   title       String
   description String   @default("")
   date        DateTime

@@ -60,3 +60,46 @@ export function relativeDayLabel(key: string): string | null {
   if (key === addDaysKey(today, -1)) return "Yesterday";
   return null;
 }
+
+export function weekdayOf(key: string): number {
+  return dayKeyToDate(key).getUTCDay();
+}
+
+export function diffDays(aKey: string, bKey: string): number {
+  return Math.round(
+    (dayKeyToDate(aKey).getTime() - dayKeyToDate(bKey).getTime()) / 86_400_000,
+  );
+}
+
+export function monthLabel(key: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(dayKeyToDate(key));
+}
+
+export function startOfMonthKey(key: string): string {
+  const d = dayKeyToDate(key);
+  return toDayKey(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)));
+}
+
+export function endOfMonthKey(key: string): string {
+  const d = dayKeyToDate(key);
+  return toDayKey(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)));
+}
+
+export function getUTCMonth(key: string): number {
+  return dayKeyToDate(key).getUTCMonth();
+}
+
+export function dayOfMonth(key: string): number {
+  return dayKeyToDate(key).getUTCDate();
+}
+
+/** A 6-row (42-cell) calendar grid covering the month that `key` falls in. */
+export function monthGridKeys(key: string): string[] {
+  const first = startOfMonthKey(key);
+  const gridStart = addDaysKey(first, -weekdayOf(first));
+  return Array.from({ length: 42 }, (_, i) => addDaysKey(gridStart, i));
+}

@@ -13,36 +13,30 @@ function addDaysKey(key, amount) {
 }
 
 const today = new Date().toISOString().slice(0, 10);
-const tomorrow = addDaysKey(today, 1);
+const d = (n) => dayKeyToDate(addDaysKey(today, n));
 
 const seedTasks = [
-  {
-    title: "Morning standup",
-    description: "Sync with the team on today's priorities.",
-    date: dayKeyToDate(today),
-    allDay: false,
-    time: "09:00",
-  },
-  {
-    title: "Review pull requests",
-    description: "Go through open PRs and leave feedback.",
-    date: dayKeyToDate(today),
-    allDay: true,
-    completed: true,
-  },
-  {
-    title: "Plan the next release",
-    description: "Draft the milestone scope.",
-    date: dayKeyToDate(today),
-    allDay: false,
-    time: "14:30",
-  },
-  {
-    title: "Water the plants",
-    description: "",
-    date: dayKeyToDate(tomorrow),
-    allDay: true,
-  },
+  // 3 days ago: nothing done -> red
+  { kind: "task", title: "Draft release notes", date: d(-3), allDay: true, completed: false },
+  { kind: "task", title: "Triage bug reports", date: d(-3), allDay: true, completed: false },
+
+  // 2 days ago: half done -> yellow
+  { kind: "task", title: "Update dependencies", date: d(-2), allDay: true, completed: true },
+  { kind: "task", title: "Fix flaky test", date: d(-2), allDay: true, completed: false },
+
+  // Yesterday: all done -> green
+  { kind: "task", title: "Ship hotfix", date: d(-1), allDay: true, completed: true },
+  { kind: "task", title: "Reply to customer", date: d(-1), allDay: true, completed: true },
+
+  // Today: a mix of tasks plus an event
+  { kind: "task", title: "Morning standup", date: d(0), allDay: false, time: "09:00", completed: false },
+  { kind: "task", title: "Review pull requests", date: d(0), allDay: true, completed: true },
+  { kind: "task", title: "Plan the next release", date: d(0), allDay: false, time: "14:30", completed: false },
+  { kind: "event", title: "Team lunch", date: d(0), allDay: false, time: "12:30" },
+
+  // Tomorrow
+  { kind: "task", title: "Water the plants", date: d(1), allDay: true, completed: false },
+  { kind: "event", title: "Dentist appointment", date: d(1), allDay: false, time: "16:00" },
 ];
 
 async function main() {
@@ -54,7 +48,7 @@ async function main() {
   for (const task of seedTasks) {
     await prisma.task.create({ data: task });
   }
-  console.log(`Seeded ${seedTasks.length} tasks.`);
+  console.log(`Seeded ${seedTasks.length} items.`);
 }
 
 main()
