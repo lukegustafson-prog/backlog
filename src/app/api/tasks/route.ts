@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isKind, isRepeat, type Repeat, type CustomUnit, CUSTOM_UNITS } from "@/lib/tasks";
 import { addDaysKey, dayKeyToDate, isValidDayKey } from "@/lib/date";
+import { isValidTime } from "@/lib/time";
 import { generateOccurrences, type OccurrenceSpec } from "@/lib/recurrence";
 
 export async function GET(request: Request) {
@@ -90,8 +91,19 @@ export async function POST(request: Request) {
 
   const kind = isKind(data.kind) ? data.kind : "task";
   const repeat: Repeat = isRepeat(data.repeat) ? data.repeat : "none";
-  const allDay = data.allDay === undefined ? true : Boolean(data.allDay);
-  const time = !allDay && typeof data.time === "string" ? data.time : "";
+
+  let allDay: boolean;
+  let time: string;
+  if (kind === "event") {
+    if (!isValidTime(data.time)) {
+      return NextResponse.json({ error: "Events require a time" }, { status: 400 });
+    }
+    allDay = false;
+    time = data.time;
+  } else {
+    allDay = data.allDay === undefined ? true : Boolean(data.allDay);
+    time = !allDay && isValidTime(data.time) ? data.time : "";
+  }
 
   if (repeat === "none") {
     const task = await prisma.task.create({
