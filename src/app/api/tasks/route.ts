@@ -1,35 +1,35 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { isRepeat, type Repeat } from "@/lib/tasks";
-import { addDaysKey, addMonthsKey, dayKeyToDate, isValidDayKey } from "@/lib/date";
-
-const MAX_OCCURRENCES = 60;
-
-function buildSeriesKeys(startKey: string, repeat: Repeat, count: number): string[] {
-  const keys: string[] = [];
-  let current = startKey;
-  for (let i = 0; i < count; i++) {
-    keys.push(current);
-    if (repeat === "daily") current = addDaysKey(current, 1);
-    else if (repeat === "weekly") current = addDaysKey(current, 7);
-    else if (repeat === "monthly") current = addMonthsKey(current, 1);
-  }
-  return keys;
-}
+import { isKind, isRepeat, type Repeat, type CustomUnit, CUSTOM_UNITS } from "@/lib/tasks";
+import { addDaysKey, dayKeyToDate, isValidDayKey } from "@/lib/date";
+import { generateOccurrences, type OccurrenceSpec } from "@/lib/recurrence";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const dateKey = searchParams.get("date");
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
 
   if (dateKey) {
     if (!isValidDayKey(dateKey)) {
       return NextResponse.json({ error: "Invalid date" }, { status: 400 });
     }
-    const start = dayKeyToDate(dateKey);
-    const end = dayKeyToDate(addDaysKey(dateKey, 1));
     const tasks = await prisma.task.findMany({
-      where: { date: { gte: start, lt: end } },
+      where: {
+        date: { gte: dayKeyToDate(dateKey), lt: dayKeyToDate(addDaysKey(dateKey, 1)) },
+      },
       orderBy: [{ allDay: "desc" }, { time: "asc" }, { createdAt: "asc" }],
+    });
+    return NextResponse.json(tasks);
+  }
+
+  if (from && to) {
+    if (!isValidDayKey(from) || !isValidDayKey(to)) {
+      return NextResponse.json({ error: "Invalid range" }, { status: 400 });
+    }
+    const tasks = await prisma.task.findMany({
+      where: { date: { gte: dayKeyToDate(from), lt: dayKeyToDate(to) } },
+      orderBy: [{ date: "asc" }, { allDay: "desc" }, { time: "asc" }],
     });
     return NextResponse.json(tasks);
   }
@@ -38,6 +38,35 @@ export async function GET(request: Request) {
     orderBy: [{ date: "asc" }, { time: "asc" }],
   });
   return NextResponse.json(tasks);
+}
+
+function specFromBody(data: Record<string, unknown>, repeat: Repeat, startKey: string): OccurrenceSpec {
+  if (repeat === "custom") {
+    const custom = (data.custom ?? {}) as Record<string, unknown>;
+    const unit: CustomUnit = CUSTOM_UNITS.includes(custom.unit as CustomUnit)
+      ? (custom.unit as CustomUnit)
+      : "week";
+    const weekdays = Array.isArray(custom.weekdays)
+      ? custom.weekdays
+          .map((d) => Number(d))
+          .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
+      : [];
+    const endType = custom.endType === "until" ? "until" : "count";
+    return {
+      unit,
+      interval: Number(custom.interval) || 1,
+      weekdays,
+      endType,
+      count: Number(custom.count) || 10,
+      until: typeof custom.until === "string" && isValidDayKey(custom.until) ? custom.until : startKey,
+    };
+  }
+
+  const occurrences = Number(data.occurrences);
+  const count = Number.isFinite(occurrences) ? occurrences : 10;
+  const unit: CustomUnit = repeat === "monthly" ? "month" : "day";
+  const interval = repeat === "weekly" ? 7 : 1;
+  return { unit, interval, weekdays: [], endType: "count", count, until: startKey };
 }
 
 export async function POST(request: Request) {
@@ -59,41 +88,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A valid date is required" }, { status: 400 });
   }
 
-  const description =
-    typeof data.description === "string" ? data.description.trim() : "";
+  const kind = isKind(data.kind) ? data.kind : "task";
   const repeat: Repeat = isRepeat(data.repeat) ? data.repeat : "none";
   const allDay = data.allDay === undefined ? true : Boolean(data.allDay);
   const time = !allDay && typeof data.time === "string" ? data.time : "";
 
-  let occurrences = 1;
-  if (repeat !== "none") {
-    const requested = Number(data.occurrences);
-    occurrences = Number.isFinite(requested)
-      ? Math.min(Math.max(Math.trunc(requested), 1), MAX_OCCURRENCES)
-      : 10;
-  }
-
   if (repeat === "none") {
     const task = await prisma.task.create({
-      data: {
-        title,
-        description,
-        date: dayKeyToDate(dateKey),
-        allDay,
-        time,
-        repeat,
-      },
+      data: { kind, title, date: dayKeyToDate(dateKey), allDay, time, repeat },
     });
     return NextResponse.json(task, { status: 201 });
   }
 
+  const spec = specFromBody(data, repeat, dateKey);
+  const keys = generateOccurrences(dateKey, spec);
   const seriesId = crypto.randomUUID();
-  const keys = buildSeriesKeys(dateKey, repeat, occurrences);
+
   await prisma.task.createMany({
     data: keys.map((key) => ({
       seriesId,
+      kind,
       title,
-      description,
       date: dayKeyToDate(key),
       allDay,
       time,
@@ -102,7 +117,8 @@ export async function POST(request: Request) {
   });
 
   const first = await prisma.task.findFirst({
-    where: { seriesId, date: dayKeyToDate(dateKey) },
+    where: { seriesId },
+    orderBy: { date: "asc" },
   });
   return NextResponse.json(first, { status: 201 });
 }
