@@ -50,6 +50,25 @@ async function main() {
     await prisma.task.create({ data: task });
   }
   console.log(`Seeded ${seedTasks.length} items.`);
+
+  if ((await prisma.symptom.count()) === 0) {
+    const seedSymptoms = [
+      { feeling: "bloated", date: d(0), time: "08:00", volume: null, emptied: null },
+      { feeling: "just_pooped", date: d(0), time: "10:00", volume: 7, emptied: true },
+      { feeling: "abdominal_pain", date: d(0), time: "13:00", volume: null, emptied: null },
+    ];
+    for (const s of seedSymptoms) await prisma.symptom.create({ data: s });
+    console.log(`Seeded ${seedSymptoms.length} symptoms.`);
+  }
+
+  if ((await prisma.food.count()) === 0) {
+    const seedFoods = [
+      { name: "Oatmeal with banana", date: d(0), calories: 320, protein: 9, fat: 6, sugar: 14, carbs: 58, fiber: 8 },
+      { name: "Grilled chicken salad", date: d(0), calories: 450, protein: 38, fat: 22, sugar: 6, carbs: 18, fiber: 5 },
+    ];
+    for (const f of seedFoods) await prisma.food.create({ data: f });
+    console.log(`Seeded ${seedFoods.length} foods.`);
+  }
 }
 
 main()

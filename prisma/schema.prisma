@@ -24,3 +24,35 @@ model Task {
   @@index([date])
   @@index([seriesId])
 }
+
+// Symptom-tracker mode: a logged symptom ("events are symptoms").
+model Symptom {
+  id        String   @id @default(cuid())
+  feeling   String
+  // Only set when feeling is "just_pooped".
+  volume    Int?
+  emptied   Boolean?
+  date      DateTime
+  time      String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+}
+
+// Symptom-tracker mode: a named food with nutrition facts.
+model Food {
+  id        String   @id @default(cuid())
+  name      String
+  calories  Float    @default(0)
+  protein   Float    @default(0)
+  fat       Float    @default(0)
+  sugar     Float    @default(0)
+  carbs     Float    @default(0)
+  fiber     Float    @default(0)
+  date      DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+}
