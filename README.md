@@ -2,6 +2,15 @@
 
 A clean, Notion-style **daily agenda** built with **Next.js (App Router)**, **TypeScript**, **Tailwind CSS**, and **Prisma + SQLite**.
 
+## Modes
+
+A switch in the top-left toggles between two modes (the choice is remembered in `localStorage`):
+
+- **Productivity** — the task/event agenda described below (day timeline + month calendar).
+- **Symptoms** — a symptom tracker. Log a **symptom** by answering "What are you feeling?" (e.g. *I just pooped*, *I feel bloated*); choosing *I just pooped* reveals follow-up questions for **volume (1–10)** and whether you **feel emptied**. You can also log **foods** with a name plus calories, protein, fat, sugar, carbs, and fiber, and the day shows running nutrition totals.
+
+## Productivity mode
+
 Tasks behave like calendar events: each is scheduled on a day (optionally at a time), you check them off when done, and you can navigate between days with the back/forward arrows. There are two item kinds:
 
 - **Tasks** have a checkbox you tick off when complete. They start **unscheduled** above a vertical hour-by-hour **timeline**; press **Assign to time** to drop a task onto the timeline at a chosen hour.

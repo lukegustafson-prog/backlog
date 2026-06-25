@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   addDaysKey,
   addMonthsKey,
@@ -12,22 +12,39 @@ import {
 import AddTaskModal, { type NewTaskPayload } from "./AddTaskModal";
 import DayView from "./DayView";
 import MonthView from "./MonthView";
+import SymptomDayView from "./SymptomDayView";
 
 type View = "day" | "month";
+type Mode = "productivity" | "symptoms";
+
+const MODE_STORAGE_KEY = "backlog-mode";
 
 export default function Agenda() {
+  const [mode, setMode] = useState<Mode>("productivity");
   const [view, setView] = useState<View>("day");
   const [dateKey, setDateKey] = useState(todayKey());
   const [modalOpen, setModalOpen] = useState(false);
   const [version, setVersion] = useState(0);
 
-  const relative = view === "day" ? relativeDayLabel(dateKey) : null;
+  useEffect(() => {
+    const saved = localStorage.getItem(MODE_STORAGE_KEY);
+    if (saved === "symptoms" || saved === "productivity") setMode(saved);
+  }, []);
+
+  function changeMode(next: Mode) {
+    setMode(next);
+    localStorage.setItem(MODE_STORAGE_KEY, next);
+    if (next === "symptoms") setView("day");
+  }
+
+  const isMonth = mode === "productivity" && view === "month";
+  const relative = !isMonth ? relativeDayLabel(dateKey) : null;
 
   function goPrev() {
-    setDateKey((k) => (view === "day" ? addDaysKey(k, -1) : addMonthsKey(k, -1)));
+    setDateKey((k) => (isMonth ? addMonthsKey(k, -1) : addDaysKey(k, -1)));
   }
   function goNext() {
-    setDateKey((k) => (view === "day" ? addDaysKey(k, 1) : addMonthsKey(k, 1)));
+    setDateKey((k) => (isMonth ? addMonthsKey(k, 1) : addDaysKey(k, 1)));
   }
 
   async function createTask(payload: NewTaskPayload) {
@@ -42,7 +59,27 @@ export default function Agenda() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-12">
+    <main className="mx-auto max-w-4xl px-6 py-10">
+      {/* Mode switch (top left) */}
+      <div className="mb-8 inline-flex rounded-lg bg-hover p-0.5 text-sm">
+        <button
+          onClick={() => changeMode("productivity")}
+          className={`rounded-md px-3 py-1.5 font-medium transition ${
+            mode === "productivity" ? "bg-white text-ink shadow-sm" : "text-subtle"
+          }`}
+        >
+          Productivity
+        </button>
+        <button
+          onClick={() => changeMode("symptoms")}
+          className={`rounded-md px-3 py-1.5 font-medium transition ${
+            mode === "symptoms" ? "bg-white text-ink shadow-sm" : "text-subtle"
+          }`}
+        >
+          Symptoms
+        </button>
+      </div>
+
       <header className="mb-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -52,13 +89,16 @@ export default function Agenda() {
               </p>
             )}
             <h1 className="text-3xl font-semibold tracking-tight text-ink">
-              {view === "day" ? formatLongDate(dateKey) : monthLabel(dateKey)}
+              {isMonth ? monthLabel(dateKey) : formatLongDate(dateKey)}
             </h1>
+            {mode === "symptoms" && (
+              <p className="mt-1 text-sm text-subtle">Symptom tracker</p>
+            )}
           </div>
 
           <div className="flex items-center gap-1">
             <button
-              aria-label={view === "day" ? "Previous day" : "Previous month"}
+              aria-label={isMonth ? "Previous month" : "Previous day"}
               onClick={goPrev}
               className="grid h-9 w-9 place-items-center rounded-md border border-line text-ink transition hover:bg-hover"
             >
@@ -71,54 +111,70 @@ export default function Agenda() {
               Today
             </button>
             <button
-              aria-label={view === "day" ? "Next day" : "Next month"}
+              aria-label={isMonth ? "Next month" : "Next day"}
               onClick={goNext}
               className="grid h-9 w-9 place-items-center rounded-md border border-line text-ink transition hover:bg-hover"
             >
               <ChevronRight />
             </button>
-            <button
-              aria-label={view === "day" ? "Switch to calendar view" : "Switch to day view"}
-              title={view === "day" ? "Calendar view" : "Day view"}
-              onClick={() => setView((v) => (v === "day" ? "month" : "day"))}
-              className={`grid h-9 w-9 place-items-center rounded-md border transition ${
-                view === "month"
-                  ? "border-[#2383e2] bg-[#2383e2]/10 text-[#2383e2]"
-                  : "border-line text-ink hover:bg-hover"
-              }`}
-            >
-              {view === "day" ? <CalendarIcon /> : <ListIcon />}
-            </button>
+            {mode === "productivity" && (
+              <button
+                aria-label={view === "day" ? "Switch to calendar view" : "Switch to day view"}
+                title={view === "day" ? "Calendar view" : "Day view"}
+                onClick={() => setView((v) => (v === "day" ? "month" : "day"))}
+                className={`grid h-9 w-9 place-items-center rounded-md border transition ${
+                  view === "month"
+                    ? "border-[#2383e2] bg-[#2383e2]/10 text-[#2383e2]"
+                    : "border-line text-ink hover:bg-hover"
+                }`}
+              >
+                {view === "day" ? <CalendarIcon /> : <ListIcon />}
+              </button>
+            )}
           </div>
         </div>
       </header>
 
-      <button
-        onClick={() => setModalOpen(true)}
-        className="mb-4 flex w-full items-center gap-2 rounded-lg border border-dashed border-line px-4 py-3 text-left text-sm font-medium text-subtle transition hover:border-[#2383e2] hover:text-[#2383e2]"
-      >
-        <span className="text-lg leading-none">+</span> Add task or event
-      </button>
-
-      {view === "day" ? (
-        <DayView dateKey={dateKey} version={version} onChanged={() => setVersion((v) => v + 1)} />
-      ) : (
-        <MonthView
+      {mode === "symptoms" ? (
+        <SymptomDayView
           dateKey={dateKey}
           version={version}
-          onSelectDay={(key) => {
-            setDateKey(key);
-            setView("day");
-          }}
+          onChanged={() => setVersion((v) => v + 1)}
         />
-      )}
+      ) : (
+        <>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="mb-4 flex w-full items-center gap-2 rounded-lg border border-dashed border-line px-4 py-3 text-left text-sm font-medium text-subtle transition hover:border-[#2383e2] hover:text-[#2383e2]"
+          >
+            <span className="text-lg leading-none">+</span> Add task or event
+          </button>
 
-      {modalOpen && (
-        <AddTaskModal
-          dateKey={dateKey}
-          onClose={() => setModalOpen(false)}
-          onCreate={createTask}
-        />
+          {view === "day" ? (
+            <DayView
+              dateKey={dateKey}
+              version={version}
+              onChanged={() => setVersion((v) => v + 1)}
+            />
+          ) : (
+            <MonthView
+              dateKey={dateKey}
+              version={version}
+              onSelectDay={(key) => {
+                setDateKey(key);
+                setView("day");
+              }}
+            />
+          )}
+
+          {modalOpen && (
+            <AddTaskModal
+              dateKey={dateKey}
+              onClose={() => setModalOpen(false)}
+              onCreate={createTask}
+            />
+          )}
+        </>
       )}
     </main>
   );
