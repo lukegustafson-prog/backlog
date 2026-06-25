@@ -72,9 +72,9 @@ export default function AddSymptomModal({ dateKey, onClose, onCreate }: AddSympt
 
           <div className="space-y-4 px-5 py-4">
             <div>
-              <label className="mb-1 block text-sm text-subtle">What are you feeling?</label>
+              <label className="mb-1 block text-sm text-subtle">Symptom</label>
               <select
-                aria-label="What are you feeling?"
+                aria-label="Symptom"
                 value={feeling}
                 onChange={(e) => setFeeling(e.target.value as Feeling)}
                 className="w-full rounded-md border border-line bg-white px-2 py-2 text-sm text-ink outline-none focus:border-[#2383e2]"
@@ -91,10 +91,10 @@ export default function AddSymptomModal({ dateKey, onClose, onCreate }: AddSympt
               <div className="space-y-4 rounded-lg border border-line bg-hover/40 p-3">
                 <div>
                   <label className="mb-1 block text-sm text-subtle">
-                    From 1 to 10, what is the volume?
+                    Stool volume (1–10)
                   </label>
                   <select
-                    aria-label="Volume"
+                    aria-label="Stool volume"
                     value={volume}
                     onChange={(e) => setVolume(Number(e.target.value))}
                     className="w-full rounded-md border border-line bg-white px-2 py-2 text-sm text-ink outline-none focus:border-[#2383e2]"
@@ -107,9 +107,11 @@ export default function AddSymptomModal({ dateKey, onClose, onCreate }: AddSympt
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm text-subtle">Do you feel emptied?</label>
+                  <label className="mb-1 block text-sm text-subtle">
+                    Sensation of complete evacuation?
+                  </label>
                   <select
-                    aria-label="Do you feel emptied?"
+                    aria-label="Sensation of complete evacuation?"
                     value={emptied ? "yes" : "no"}
                     onChange={(e) => setEmptied(e.target.value === "yes")}
                     className="w-full rounded-md border border-line bg-white px-2 py-2 text-sm text-ink outline-none focus:border-[#2383e2]"
