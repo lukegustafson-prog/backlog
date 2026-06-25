@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { FEELINGS, FEELING_WITH_FOLLOWUP, type Feeling } from "@/lib/symptoms";
 import { formatLongDate } from "@/lib/date";
-import { from12, hourTimeString, HOURS_12, to12, type AmPm } from "@/lib/time";
+import { timeString } from "@/lib/time";
+import TimePicker from "./TimePicker";
 
 export interface NewSymptomPayload {
   feeling: Feeling;
@@ -20,10 +21,9 @@ interface AddSymptomModalProps {
 }
 
 export default function AddSymptomModal({ dateKey, onClose, onCreate }: AddSymptomModalProps) {
-  const now = to12(new Date().getHours());
+  const nowDate = new Date();
   const [feeling, setFeeling] = useState<Feeling>("need_poop");
-  const [hour, setHour] = useState(now.hour);
-  const [ampm, setAmPm] = useState<AmPm>(now.ampm);
+  const [time, setTime] = useState(timeString(nowDate.getHours(), nowDate.getMinutes()));
   const [volume, setVolume] = useState(5);
   const [emptied, setEmptied] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,7 +46,7 @@ export default function AddSymptomModal({ dateKey, onClose, onCreate }: AddSympt
       await onCreate({
         feeling,
         date: dateKey,
-        time: hourTimeString(from12(hour, ampm)),
+        time,
         volume: showFollowUp ? volume : null,
         emptied: showFollowUp ? emptied : null,
       });
@@ -123,27 +123,7 @@ export default function AddSymptomModal({ dateKey, onClose, onCreate }: AddSympt
 
             <div className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-sm text-subtle">Time</span>
-              <select
-                aria-label="Hour"
-                value={hour}
-                onChange={(e) => setHour(Number(e.target.value))}
-                className="rounded-md border border-line bg-white px-2 py-1.5 text-sm text-ink outline-none focus:border-[#2383e2]"
-              >
-                {HOURS_12.map((h) => (
-                  <option key={h} value={h}>
-                    {h}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="AM or PM"
-                value={ampm}
-                onChange={(e) => setAmPm(e.target.value as AmPm)}
-                className="rounded-md border border-line bg-white px-2 py-1.5 text-sm text-ink outline-none focus:border-[#2383e2]"
-              >
-                <option value="AM">AM</option>
-                <option value="PM">PM</option>
-              </select>
+              <TimePicker value={time} onChange={setTime} />
             </div>
           </div>
 

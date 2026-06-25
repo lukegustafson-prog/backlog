@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { NUTRITION_FIELDS } from "@/lib/symptoms";
 import { addDaysKey, dayKeyToDate, isValidDayKey } from "@/lib/date";
+import { isValidTime } from "@/lib/time";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
       where: {
         date: { gte: dayKeyToDate(dateKey), lt: dayKeyToDate(addDaysKey(dateKey, 1)) },
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ time: "asc" }, { createdAt: "asc" }],
     });
     return NextResponse.json(foods);
   }
@@ -50,9 +51,10 @@ export async function POST(request: Request) {
   const nutrition = Object.fromEntries(
     NUTRITION_FIELDS.map((f) => [f.key, nonNegative(data[f.key])]),
   );
+  const time = isValidTime(data.time) ? data.time : "";
 
   const food = await prisma.food.create({
-    data: { name, date: dayKeyToDate(dateKey), ...nutrition },
+    data: { name, date: dayKeyToDate(dateKey), time, ...nutrition },
   });
   return NextResponse.json(food, { status: 201 });
 }
