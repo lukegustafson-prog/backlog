@@ -73,3 +73,25 @@ Open [http://localhost:3000](http://localhost:3000).
 A repeating task is stored as multiple rows sharing a `seriesId` (one row per occurrence, up to 60), so checking one off does not affect the others.
 
 The database connection string lives in `.env` (`DATABASE_URL="file:./dev.db"`). It only points at a local SQLite file, so it is safe to commit.
+
+## Access (password gate)
+
+The whole app is behind a single shared password. Unauthenticated visitors are redirected to `/login`; entering the correct password sets a signed session cookie (via `src/middleware.ts` and `src/lib/auth.ts`). A **Lock** button signs out.
+
+- Local dev password: `SITE_PASSWORD` in `.env` (defaults to `changeme`).
+- In production set `SITE_PASSWORD` and a long random `SESSION_SECRET` in the host dashboard.
+
+## Deployment (Vercel + Turso)
+
+Local dev uses the SQLite file; **production uses a hosted [Turso](https://turso.tech) database** (libSQL, SQLite-compatible) so data persists and syncs across devices. `src/lib/prisma.ts` automatically uses Turso when `TURSO_DATABASE_URL` is set, otherwise it falls back to the local SQLite file.
+
+One-time setup:
+
+1. Create a Turso database, then run the DDL in `prisma/turso-schema.sql` against it once (Turso web SQL console or `turso db shell <db> < prisma/turso-schema.sql`).
+2. Deploy the repo to Vercel and set these environment variables:
+   - `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` (from Turso)
+   - `SITE_PASSWORD` (your chosen password)
+   - `SESSION_SECRET` (a long random string, e.g. `openssl rand -hex 32`)
+3. Every push to `main` auto-redeploys.
+
+See `.env.example` for the full list of variables.

@@ -58,25 +58,42 @@ export default function Agenda() {
     setVersion((v) => v + 1);
   }
 
+  async function lock() {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } finally {
+      window.location.href = "/login";
+    }
+  }
+
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      {/* Mode switch (top left) */}
-      <div className="mb-8 inline-flex rounded-lg bg-hover p-0.5 text-sm">
+      {/* Mode switch (top left) + lock */}
+      <div className="mb-8 flex items-center justify-between gap-4">
+        <div className="inline-flex rounded-lg bg-hover p-0.5 text-sm">
+          <button
+            onClick={() => changeMode("productivity")}
+            className={`rounded-md px-3 py-1.5 font-medium transition ${
+              mode === "productivity" ? "bg-white text-ink shadow-sm" : "text-subtle"
+            }`}
+          >
+            Productivity
+          </button>
+          <button
+            onClick={() => changeMode("symptoms")}
+            className={`rounded-md px-3 py-1.5 font-medium transition ${
+              mode === "symptoms" ? "bg-white text-ink shadow-sm" : "text-subtle"
+            }`}
+          >
+            Symptoms
+          </button>
+        </div>
         <button
-          onClick={() => changeMode("productivity")}
-          className={`rounded-md px-3 py-1.5 font-medium transition ${
-            mode === "productivity" ? "bg-white text-ink shadow-sm" : "text-subtle"
-          }`}
+          onClick={lock}
+          title="Lock (sign out)"
+          className="rounded-md border border-line px-3 py-1.5 text-sm font-medium text-subtle transition hover:bg-hover hover:text-ink"
         >
-          Productivity
-        </button>
-        <button
-          onClick={() => changeMode("symptoms")}
-          className={`rounded-md px-3 py-1.5 font-medium transition ${
-            mode === "symptoms" ? "bg-white text-ink shadow-sm" : "text-subtle"
-          }`}
-        >
-          Symptoms
+          Lock
         </button>
       </div>
 
