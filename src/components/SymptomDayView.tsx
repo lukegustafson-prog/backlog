@@ -288,11 +288,12 @@ function EntryRow({
         {entry.type === "symptom" ? (
           <span className="text-sm text-ink">
             {FEELING_LABELS[entry.symptom.feeling]}
-            {entry.symptom.volume !== null && (
-              <span className="ml-2 text-xs text-subtle">
-                Volume {entry.symptom.volume}/10 · Emptied: {entry.symptom.emptied ? "Yes" : "No"}
-              </span>
-            )}
+              {entry.symptom.volume !== null && (
+                <span className="ml-2 text-xs text-subtle">
+                  Stool volume {entry.symptom.volume}/10 · Complete evacuation:{" "}
+                  {entry.symptom.emptied ? "Yes" : "No"}
+                </span>
+              )}
           </span>
         ) : (
           <>

@@ -1,9 +1,9 @@
 export const FEELINGS = [
-  { value: "need_poop", label: "I have to poop" },
-  { value: "just_pooped", label: "I just pooped" },
-  { value: "abdominal_pain", label: "I feel abdominal pain" },
-  { value: "bloated", label: "I feel bloated" },
-  { value: "nauseous", label: "I feel like I am going to throw up" },
+  { value: "need_poop", label: "Defecation urgency" },
+  { value: "just_pooped", label: "Bowel movement" },
+  { value: "abdominal_pain", label: "Abdominal pain" },
+  { value: "bloated", label: "Abdominal bloating / distension" },
+  { value: "nauseous", label: "Nausea" },
 ] as const;
 
 export type Feeling = (typeof FEELINGS)[number]["value"];

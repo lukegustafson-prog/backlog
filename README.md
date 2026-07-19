@@ -7,7 +7,7 @@ A clean, Notion-style **daily agenda** built with **Next.js (App Router)**, **Ty
 A switch in the top-left toggles between two modes (the choice is remembered in `localStorage`):
 
 - **Productivity** — the task/event agenda described below (day timeline + month calendar).
-- **Symptoms** — a symptom tracker. Log a **symptom** by answering "What are you feeling?" (e.g. *I just pooped*, *I feel bloated*); choosing *I just pooped* reveals follow-up questions for **volume (1–10)** and whether you **feel emptied**. You can also log **foods** with a name plus calories, protein, fat, sugar, carbs, and fiber, and the day shows running nutrition totals.
+- **Symptoms** — a symptom tracker. Log a **symptom** from a clinical list (*Defecation urgency*, *Bowel movement*, *Abdominal pain*, *Abdominal bloating / distension*, *Nausea*); choosing *Bowel movement* reveals follow-up questions for **stool volume (1–10)** and **sensation of complete evacuation**. You can also log **foods** with a name plus calories, protein, fat, sugar, carbs, and fiber, and the day shows running nutrition totals.
 
 ## Productivity mode
 
