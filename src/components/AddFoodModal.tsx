@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import { NUTRITION_FIELDS, type NutritionKey } from "@/lib/symptoms";
 import { formatLongDate } from "@/lib/date";
+import { timeString } from "@/lib/time";
+import TimePicker from "./TimePicker";
 
 export interface NewFoodPayload {
   name: string;
   date: string;
+  time: string;
   calories: number;
   protein: number;
   fat: number;
@@ -33,7 +36,9 @@ const EMPTY_NUTRITION: NutritionState = {
 };
 
 export default function AddFoodModal({ dateKey, onClose, onCreate }: AddFoodModalProps) {
+  const nowDate = new Date();
   const [name, setName] = useState("");
+  const [time, setTime] = useState(timeString(nowDate.getHours(), nowDate.getMinutes()));
   const [values, setValues] = useState<NutritionState>(EMPTY_NUTRITION);
   const [saving, setSaving] = useState(false);
 
@@ -53,6 +58,7 @@ export default function AddFoodModal({ dateKey, onClose, onCreate }: AddFoodModa
       await onCreate({
         name: name.trim(),
         date: dateKey,
+        time,
         calories: Number(values.calories) || 0,
         protein: Number(values.protein) || 0,
         fat: Number(values.fat) || 0,
@@ -85,6 +91,11 @@ export default function AddFoodModal({ dateKey, onClose, onCreate }: AddFoodModa
               className="w-full border-b-2 border-transparent bg-transparent pb-1 text-xl font-medium text-ink outline-none placeholder:text-subtle/60 focus:border-[#2383e2]"
             />
             <p className="mt-2 text-sm text-subtle">{formatLongDate(dateKey)}</p>
+          </div>
+
+          <div className="flex items-center gap-3 border-b border-line px-5 py-3">
+            <span className="w-24 shrink-0 text-sm text-subtle">Time</span>
+            <TimePicker value={time} onChange={setTime} />
           </div>
 
           <div className="grid grid-cols-2 gap-3 px-5 py-4">

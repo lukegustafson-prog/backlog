@@ -51,6 +51,7 @@ model Food {
   carbs     Float    @default(0)
   fiber     Float    @default(0)
   date      DateTime
+  time      String   @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

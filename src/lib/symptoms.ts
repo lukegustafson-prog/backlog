@@ -54,6 +54,7 @@ export interface Food {
   carbs: number;
   fiber: number;
   date: string;
+  time: string;
   createdAt: string;
   updatedAt: string;
 }
