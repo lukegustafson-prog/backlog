@@ -89,7 +89,7 @@ export default function Agenda() {
               </p>
             )}
             <h1 className="text-3xl font-semibold tracking-tight text-ink">
-              {isMonth ? monthLabel(dateKey) : formatLongDate(dateKey)}
+              {isMonth ? "Calendar" : formatLongDate(dateKey)}
             </h1>
             {mode === "symptoms" && (
               <p className="mt-1 text-sm text-subtle">Symptom tracker</p>
@@ -106,9 +106,10 @@ export default function Agenda() {
             </button>
             <button
               onClick={() => setDateKey(todayKey())}
-              className="rounded-md border border-line px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-hover"
+              title={isMonth ? "Go to current month" : "Go to today"}
+              className="min-w-[7rem] rounded-md border border-line px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-hover"
             >
-              Today
+              {isMonth ? monthLabel(dateKey) : "Today"}
             </button>
             <button
               aria-label={isMonth ? "Next month" : "Next day"}
