@@ -77,7 +77,7 @@ export default function AddFoodModal({ dateKey, onClose, onCreate }: AddFoodModa
       onMouseDown={onClose}
     >
       <div
-        className="w-full max-w-lg overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-line"
+        className="w-full max-w-lg overflow-hidden rounded-xl bg-surface shadow-2xl ring-1 ring-line"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <form onSubmit={handleSubmit}>

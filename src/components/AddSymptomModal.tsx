@@ -61,7 +61,7 @@ export default function AddSymptomModal({ dateKey, onClose, onCreate }: AddSympt
       onMouseDown={onClose}
     >
       <div
-        className="w-full max-w-lg overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-line"
+        className="w-full max-w-lg overflow-hidden rounded-xl bg-surface shadow-2xl ring-1 ring-line"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <form onSubmit={handleSubmit}>
@@ -77,7 +77,7 @@ export default function AddSymptomModal({ dateKey, onClose, onCreate }: AddSympt
                 aria-label="What are you feeling?"
                 value={feeling}
                 onChange={(e) => setFeeling(e.target.value as Feeling)}
-                className="w-full rounded-md border border-line bg-white px-2 py-2 text-sm text-ink outline-none focus:border-[#2383e2]"
+                className="w-full rounded-md border border-line bg-surface px-2 py-2 text-sm text-ink outline-none focus:border-[#2383e2]"
               >
                 {FEELINGS.map((f) => (
                   <option key={f.value} value={f.value}>
@@ -97,7 +97,7 @@ export default function AddSymptomModal({ dateKey, onClose, onCreate }: AddSympt
                     aria-label="Volume"
                     value={volume}
                     onChange={(e) => setVolume(Number(e.target.value))}
-                    className="w-full rounded-md border border-line bg-white px-2 py-2 text-sm text-ink outline-none focus:border-[#2383e2]"
+                    className="w-full rounded-md border border-line bg-surface px-2 py-2 text-sm text-ink outline-none focus:border-[#2383e2]"
                   >
                     {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
                       <option key={n} value={n}>
@@ -112,7 +112,7 @@ export default function AddSymptomModal({ dateKey, onClose, onCreate }: AddSympt
                     aria-label="Do you feel emptied?"
                     value={emptied ? "yes" : "no"}
                     onChange={(e) => setEmptied(e.target.value === "yes")}
-                    className="w-full rounded-md border border-line bg-white px-2 py-2 text-sm text-ink outline-none focus:border-[#2383e2]"
+                    className="w-full rounded-md border border-line bg-surface px-2 py-2 text-sm text-ink outline-none focus:border-[#2383e2]"
                   >
                     <option value="yes">Yes</option>
                     <option value="no">No</option>

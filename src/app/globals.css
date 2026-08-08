@@ -4,12 +4,28 @@
 
 :root {
   color-scheme: light;
+  --ink: 55 53 47;
+  --subtle: 120 119 116;
+  --line: 233 233 231;
+  --hover: 241 241 239;
+  --surface: 255 255 255;
+  --canvas: 255 255 255;
+}
+
+.dark {
+  color-scheme: dark;
+  --ink: 224 223 221;
+  --subtle: 150 149 145;
+  --line: 62 62 60;
+  --hover: 45 45 43;
+  --surface: 40 40 39;
+  --canvas: 25 25 24;
 }
 
 html,
 body {
-  background: #ffffff;
-  color: #37352f;
+  background: rgb(var(--canvas));
+  color: rgb(var(--ink));
   min-height: 100vh;
 }
 
