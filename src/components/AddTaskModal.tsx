@@ -11,11 +11,12 @@ import {
   type Repeat,
 } from "@/lib/tasks";
 import { addMonthsKey, formatLongDate, weekdayOf } from "@/lib/date";
-import { from12, hourTimeString, HOURS_12, type AmPm } from "@/lib/time";
+import TimePicker from "./TimePicker";
 
 export interface NewTaskPayload {
   title: string;
   date: string;
+  description: string;
   allDay: boolean;
   time: string;
   kind: Kind;
@@ -46,13 +47,13 @@ const UNIT_LABELS: Record<CustomUnit, string> = {
 export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModalProps) {
   const [kind, setKind] = useState<Kind>("task");
   const [title, setTitle] = useState("");
+  const [notes, setNotes] = useState("");
   const [repeat, setRepeat] = useState<Repeat>("none");
   const [occurrences, setOccurrences] = useState(10);
   const [saving, setSaving] = useState(false);
 
-  // Event time (hour + AM/PM only)
-  const [eventHour, setEventHour] = useState(9);
-  const [eventAmPm, setEventAmPm] = useState<AmPm>("AM");
+  // Event time (hour + minute + AM/PM)
+  const [eventTime, setEventTime] = useState("09:00");
 
   // Custom recurrence state
   const [interval, setIntervalValue] = useState(1);
@@ -85,8 +86,9 @@ export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModa
       await onCreate({
         title: title.trim(),
         date: dateKey,
+        description: notes.trim(),
         allDay: !isEvent,
-        time: isEvent ? hourTimeString(from12(eventHour, eventAmPm)) : "",
+        time: isEvent ? eventTime : "",
         kind,
         repeat,
         occurrences,
@@ -115,7 +117,7 @@ export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModa
       onMouseDown={onClose}
     >
       <div
-        className="w-full max-w-lg overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-line"
+        className="w-full max-w-lg overflow-hidden rounded-xl bg-surface shadow-2xl ring-1 ring-line"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <form onSubmit={handleSubmit}>
@@ -139,7 +141,7 @@ export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModa
                   type="button"
                   onClick={() => setKind(k)}
                   className={`rounded-md px-4 py-1.5 font-medium capitalize transition ${
-                    kind === k ? "bg-white text-ink shadow-sm" : "text-subtle"
+                    kind === k ? "bg-surface text-ink shadow-sm" : "text-subtle"
                   }`}
                 >
                   {k}
@@ -164,29 +166,21 @@ export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModa
             {kind === "event" && (
               <div className="flex items-center gap-3">
                 <span className="w-24 shrink-0 text-sm text-subtle">Time</span>
-                <select
-                  aria-label="Hour"
-                  value={eventHour}
-                  onChange={(e) => setEventHour(Number(e.target.value))}
-                  className="rounded-md border border-line bg-white px-2 py-1.5 text-sm text-ink outline-none focus:border-[#2383e2]"
-                >
-                  {HOURS_12.map((h) => (
-                    <option key={h} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  aria-label="AM or PM"
-                  value={eventAmPm}
-                  onChange={(e) => setEventAmPm(e.target.value as AmPm)}
-                  className="rounded-md border border-line bg-white px-2 py-1.5 text-sm text-ink outline-none focus:border-[#2383e2]"
-                >
-                  <option value="AM">AM</option>
-                  <option value="PM">PM</option>
-                </select>
+                <TimePicker value={eventTime} onChange={setEventTime} />
               </div>
             )}
+
+            <div className="flex items-start gap-3">
+              <span className="w-24 shrink-0 pt-2 text-sm text-subtle">Notes</span>
+              <textarea
+                aria-label="Notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add notes (optional)"
+                rows={2}
+                className="flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-[#2383e2]"
+              />
+            </div>
 
             <div className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-sm text-subtle">Repeat</span>
@@ -194,7 +188,7 @@ export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModa
                 aria-label="Repeat"
                 value={repeat}
                 onChange={(e) => setRepeat(e.target.value as Repeat)}
-                className="flex-1 rounded-md border border-line bg-white px-2 py-1.5 text-sm text-ink outline-none focus:border-[#2383e2]"
+                className="flex-1 rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink outline-none focus:border-[#2383e2]"
               >
                 {REPEATS.map((r) => (
                   <option key={r} value={r}>
@@ -237,7 +231,7 @@ export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModa
                     aria-label="Unit"
                     value={unit}
                     onChange={(e) => setUnit(e.target.value as CustomUnit)}
-                    className="rounded-md border border-line bg-white px-2 py-1 outline-none focus:border-[#2383e2]"
+                    className="rounded-md border border-line bg-surface px-2 py-1 outline-none focus:border-[#2383e2]"
                   >
                     {CUSTOM_UNITS.map((u) => (
                       <option key={u} value={u}>
@@ -264,7 +258,7 @@ export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModa
                             className={`grid h-8 w-8 place-items-center rounded-full text-xs font-medium transition ${
                               active
                                 ? "bg-[#2383e2] text-white"
-                                : "bg-white text-subtle ring-1 ring-line hover:ring-[#2383e2]"
+                                : "bg-surface text-subtle ring-1 ring-line hover:ring-[#2383e2]"
                             }`}
                           >
                             {label}
@@ -281,7 +275,7 @@ export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModa
                     aria-label="End type"
                     value={endType}
                     onChange={(e) => setEndType(e.target.value as "count" | "until")}
-                    className="rounded-md border border-line bg-white px-2 py-1 outline-none focus:border-[#2383e2]"
+                    className="rounded-md border border-line bg-surface px-2 py-1 outline-none focus:border-[#2383e2]"
                   >
                     <option value="count">After</option>
                     <option value="until">On date</option>

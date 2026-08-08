@@ -205,7 +205,7 @@ export default function SymptomDayView({ dateKey, version, onChanged }: SymptomD
                   <div className="relative flex w-4 shrink-0 justify-center">
                     <span className="absolute inset-y-0 w-px bg-line" />
                     <span
-                      className={`relative mt-[11px] h-2.5 w-2.5 rounded-full ring-2 ring-white ${
+                      className={`relative mt-[11px] h-2.5 w-2.5 rounded-full ring-2 ring-canvas ${
                         items.length > 0 ? "bg-[#2383e2]" : "bg-line"
                       }`}
                     />
@@ -264,7 +264,7 @@ function EntryRow({
 }) {
   const wrapper = compact
     ? "group flex items-center gap-3 px-4 py-3 transition hover:bg-hover"
-    : "group flex items-center gap-3 rounded-lg border border-line bg-white px-3 py-2 transition hover:bg-hover";
+    : "group flex items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2 transition hover:bg-hover";
 
   return (
     <div className={wrapper}>

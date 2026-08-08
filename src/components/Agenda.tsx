@@ -13,6 +13,8 @@ import AddTaskModal, { type NewTaskPayload } from "./AddTaskModal";
 import DayView from "./DayView";
 import MonthView from "./MonthView";
 import SymptomDayView from "./SymptomDayView";
+import SettingsMenu from "./SettingsMenu";
+import QuickAdd from "./QuickAdd";
 
 type View = "day" | "month";
 type Mode = "productivity" | "symptoms";
@@ -74,7 +76,7 @@ export default function Agenda() {
           <button
             onClick={() => changeMode("productivity")}
             className={`rounded-md px-3 py-1.5 font-medium transition ${
-              mode === "productivity" ? "bg-white text-ink shadow-sm" : "text-subtle"
+              mode === "productivity" ? "bg-surface text-ink shadow-sm" : "text-subtle"
             }`}
           >
             Productivity
@@ -82,19 +84,22 @@ export default function Agenda() {
           <button
             onClick={() => changeMode("symptoms")}
             className={`rounded-md px-3 py-1.5 font-medium transition ${
-              mode === "symptoms" ? "bg-white text-ink shadow-sm" : "text-subtle"
+              mode === "symptoms" ? "bg-surface text-ink shadow-sm" : "text-subtle"
             }`}
           >
             Symptoms
           </button>
         </div>
-        <button
-          onClick={lock}
-          title="Lock (sign out)"
-          className="rounded-md border border-line px-3 py-1.5 text-sm font-medium text-subtle transition hover:bg-hover hover:text-ink"
-        >
-          Lock
-        </button>
+        <div className="flex items-center gap-1">
+          <SettingsMenu />
+          <button
+            onClick={lock}
+            title="Lock (sign out)"
+            className="rounded-md border border-line px-3 py-1.5 text-sm font-medium text-subtle transition hover:bg-hover hover:text-ink"
+          >
+            Lock
+          </button>
+        </div>
       </div>
 
       <header className="mb-8">
@@ -161,12 +166,15 @@ export default function Agenda() {
         />
       ) : (
         <>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="mb-4 flex w-full items-center gap-2 rounded-lg border border-dashed border-line px-4 py-3 text-left text-sm font-medium text-subtle transition hover:border-[#2383e2] hover:text-[#2383e2]"
-          >
-            <span className="text-lg leading-none">+</span> Add task or event
-          </button>
+          <div className="mb-4 flex items-stretch gap-2">
+            <button
+              onClick={() => setModalOpen(true)}
+              className="flex flex-1 items-center gap-2 rounded-lg border border-dashed border-line px-4 py-3 text-left text-sm font-medium text-subtle transition hover:border-[#2383e2] hover:text-[#2383e2]"
+            >
+              <span className="text-lg leading-none">+</span> Add task or event
+            </button>
+            <QuickAdd dateKey={dateKey} onAdded={() => setVersion((v) => v + 1)} />
+          </div>
 
           {view === "day" ? (
             <DayView

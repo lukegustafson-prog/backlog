@@ -38,7 +38,7 @@ function LoginForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-sm rounded-2xl border border-line bg-white p-6 shadow-sm"
+      className="w-full max-w-sm rounded-2xl border border-line bg-surface p-6 shadow-sm"
     >
       <div className="mb-5">
         <div className="mb-2 grid h-11 w-11 place-items-center rounded-xl bg-[#2383e2] text-lg font-semibold text-white">

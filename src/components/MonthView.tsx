@@ -31,7 +31,7 @@ const WEEKDAY_HEADERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
  * - otherwise (incl. 0%) → red
  */
 function cellColor(stat: DayStat | undefined): string {
-  if (!stat || stat.total === 0) return "bg-white";
+  if (!stat || stat.total === 0) return "bg-surface";
   const ratio = stat.completed / stat.total;
   if (ratio >= 0.8) return "bg-green-100 hover:bg-green-200";
   if (ratio >= 0.5) return "bg-amber-100 hover:bg-amber-200";

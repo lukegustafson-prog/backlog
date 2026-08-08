@@ -10,6 +10,27 @@ export async function GET(request: Request) {
   const dateKey = searchParams.get("date");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
+  const recentTitles = searchParams.get("recentTitles");
+
+  if (recentTitles) {
+    const limit = Math.min(Math.max(Number(recentTitles) || 8, 1), 20);
+    const recent = await prisma.task.findMany({
+      where: { kind: "task" },
+      orderBy: { createdAt: "desc" },
+      take: 60,
+      select: { title: true },
+    });
+    const seen = new Set<string>();
+    const titles: string[] = [];
+    for (const { title } of recent) {
+      if (!seen.has(title)) {
+        seen.add(title);
+        titles.push(title);
+      }
+      if (titles.length >= limit) break;
+    }
+    return NextResponse.json(titles);
+  }
 
   if (dateKey) {
     if (!isValidDayKey(dateKey)) {
@@ -91,6 +112,7 @@ export async function POST(request: Request) {
 
   const kind = isKind(data.kind) ? data.kind : "task";
   const repeat: Repeat = isRepeat(data.repeat) ? data.repeat : "none";
+  const description = typeof data.description === "string" ? data.description.trim() : "";
 
   let allDay: boolean;
   let time: string;
@@ -107,7 +129,7 @@ export async function POST(request: Request) {
 
   if (repeat === "none") {
     const task = await prisma.task.create({
-      data: { kind, title, date: dayKeyToDate(dateKey), allDay, time, repeat },
+      data: { kind, title, description, date: dayKeyToDate(dateKey), allDay, time, repeat },
     });
     return NextResponse.json(task, { status: 201 });
   }
@@ -121,6 +143,7 @@ export async function POST(request: Request) {
       seriesId,
       kind,
       title,
+      description,
       date: dayKeyToDate(key),
       allDay,
       time,

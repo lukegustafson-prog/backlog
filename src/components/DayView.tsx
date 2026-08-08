@@ -2,14 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { REPEAT_LABELS, type Task } from "@/lib/tasks";
-import {
-  formatHour,
-  from12,
-  hourTimeString,
-  HOURS_12,
-  parseHour,
-  type AmPm,
-} from "@/lib/time";
+import { formatHour, formatTime, parseHour } from "@/lib/time";
+import TimePicker from "./TimePicker";
+import EditItemModal, { type EditPayload } from "./EditItemModal";
 
 interface DayViewProps {
   dateKey: string;
@@ -28,8 +23,10 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
 
   // Inline "assign to time" picker state
   const [assigningId, setAssigningId] = useState<string | null>(null);
-  const [assignHour, setAssignHour] = useState(9);
-  const [assignAmPm, setAssignAmPm] = useState<AmPm>("AM");
+  const [assignTime, setAssignTime] = useState("09:00");
+
+  // Edit modal
+  const [editing, setEditing] = useState<Task | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -111,12 +108,11 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
 
   function startAssign(task: Task) {
     setAssigningId(task.id);
-    setAssignHour(9);
-    setAssignAmPm("AM");
+    setAssignTime("09:00");
   }
 
   async function confirmAssign(task: Task) {
-    const time = hourTimeString(from12(assignHour, assignAmPm));
+    const time = assignTime;
     setAssigningId(null);
     setTasks((prev) =>
       prev.map((t) => (t.id === task.id ? { ...t, allDay: false, time } : t)),
@@ -126,6 +122,47 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
     } catch {
       await load();
     }
+  }
+
+  async function saveEdit(payload: EditPayload) {
+    if (!editing) return;
+    const id = editing.id;
+    setEditing(null);
+    try {
+      await patch(id, {
+        title: payload.title,
+        description: payload.description,
+        allDay: payload.allDay,
+        time: payload.time,
+      });
+      await load();
+    } catch {
+      await load();
+    }
+  }
+
+  function EditButton({ task }: { task: Task }) {
+    return (
+      <button
+        aria-label="Edit"
+        onClick={() => setEditing(task)}
+        className="shrink-0 rounded px-2 py-1 text-xs text-subtle opacity-0 transition hover:bg-hover hover:text-ink group-hover:opacity-100"
+      >
+        Edit
+      </button>
+    );
+  }
+
+  function DeleteButton({ task }: { task: Task }) {
+    return (
+      <button
+        aria-label="Delete"
+        onClick={() => deleteTask(task)}
+        className="shrink-0 rounded px-2 py-1 text-xs text-subtle opacity-0 transition hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
+      >
+        Delete
+      </button>
+    );
   }
 
   return (
@@ -166,7 +203,7 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
                   aria-checked={task.completed}
                   aria-label={task.completed ? "Mark incomplete" : "Mark complete"}
                   onClick={() => toggleComplete(task)}
-                  className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border transition ${
+                  className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center self-start rounded-full border transition ${
                     task.completed
                       ? "border-[#2383e2] bg-[#2383e2] text-white"
                       : "border-subtle/50 text-transparent hover:border-[#2383e2]"
@@ -175,42 +212,27 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
                   <CheckIcon />
                 </button>
 
-                <span
-                  className={`min-w-0 flex-1 truncate text-sm ${
-                    task.completed ? "text-subtle line-through" : "text-ink"
-                  }`}
-                >
-                  {task.title}
-                  {task.repeat !== "none" && (
-                    <span title={REPEAT_LABELS[task.repeat]} className="ml-2 inline-block text-subtle">
-                      <RepeatIcon />
-                    </span>
+                <div className="min-w-0 flex-1">
+                  <span
+                    className={`block truncate text-sm ${
+                      task.completed ? "text-subtle line-through" : "text-ink"
+                    }`}
+                  >
+                    {task.title}
+                    {task.repeat !== "none" && (
+                      <span title={REPEAT_LABELS[task.repeat]} className="ml-2 inline-block text-subtle">
+                        <RepeatIcon />
+                      </span>
+                    )}
+                  </span>
+                  {task.description && (
+                    <p className="mt-0.5 truncate text-xs text-subtle">{task.description}</p>
                   )}
-                </span>
+                </div>
 
                 {assigningId === task.id ? (
                   <div className="flex items-center gap-1">
-                    <select
-                      aria-label="Hour"
-                      value={assignHour}
-                      onChange={(e) => setAssignHour(Number(e.target.value))}
-                      className="rounded-md border border-line bg-white px-1.5 py-1 text-xs text-ink outline-none focus:border-[#2383e2]"
-                    >
-                      {HOURS_12.map((h) => (
-                        <option key={h} value={h}>
-                          {h}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      aria-label="AM or PM"
-                      value={assignAmPm}
-                      onChange={(e) => setAssignAmPm(e.target.value as AmPm)}
-                      className="rounded-md border border-line bg-white px-1.5 py-1 text-xs text-ink outline-none focus:border-[#2383e2]"
-                    >
-                      <option value="AM">AM</option>
-                      <option value="PM">PM</option>
-                    </select>
+                    <TimePicker value={assignTime} onChange={setAssignTime} />
                     <button
                       onClick={() => confirmAssign(task)}
                       className="rounded-md bg-[#2383e2] px-2 py-1 text-xs font-medium text-white transition hover:opacity-90"
@@ -234,13 +256,8 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
                   </button>
                 )}
 
-                <button
-                  aria-label="Delete"
-                  onClick={() => deleteTask(task)}
-                  className="shrink-0 rounded px-2 py-1 text-xs text-subtle opacity-0 transition hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
-                >
-                  Delete
-                </button>
+                <EditButton task={task} />
+                <DeleteButton task={task} />
               </li>
             ))}
           </ul>
@@ -264,7 +281,7 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
                   <div className="relative flex w-4 shrink-0 justify-center">
                     <span className="absolute inset-y-0 w-px bg-line" />
                     <span
-                      className={`relative mt-[11px] h-2.5 w-2.5 rounded-full ring-2 ring-white ${
+                      className={`relative mt-[11px] h-2.5 w-2.5 rounded-full ring-2 ring-canvas ${
                         items.length > 0 ? "bg-[#2383e2]" : "bg-line"
                       }`}
                     />
@@ -273,7 +290,7 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
                     {items.map((task) => (
                       <div
                         key={task.id}
-                        className="group flex items-center gap-3 rounded-lg border border-line bg-white px-3 py-2 transition hover:bg-hover"
+                        className="group flex items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2 transition hover:bg-hover"
                       >
                         {task.kind === "task" ? (
                           <button
@@ -281,7 +298,7 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
                             aria-checked={task.completed}
                             aria-label={task.completed ? "Mark incomplete" : "Mark complete"}
                             onClick={() => toggleComplete(task)}
-                            className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border transition ${
+                            className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center self-start rounded-full border transition ${
                               task.completed
                                 ? "border-[#2383e2] bg-[#2383e2] text-white"
                                 : "border-subtle/50 text-transparent hover:border-[#2383e2]"
@@ -292,44 +309,45 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
                         ) : (
                           <span
                             aria-label="Event"
-                            className="grid h-4 w-4 shrink-0 place-items-center"
+                            className="mt-1 grid h-4 w-4 shrink-0 place-items-center self-start"
                           >
                             <span className="h-2.5 w-2.5 rounded-[3px] bg-[#9b59d0]" />
                           </span>
                         )}
 
-                        <span className="shrink-0 rounded bg-hover px-1.5 py-0.5 text-xs font-medium text-subtle">
-                          {formatHour(parseHour(task.time)!)}
+                        <span className="mt-0.5 shrink-0 self-start rounded bg-hover px-1.5 py-0.5 text-xs font-medium text-subtle">
+                          {formatTime(task.time)}
                         </span>
 
-                        <span
-                          className={`min-w-0 flex-1 truncate text-sm ${
-                            task.kind === "task" && task.completed
-                              ? "text-subtle line-through"
-                              : "text-ink"
-                          }`}
-                        >
-                          {task.title}
-                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`truncate text-sm ${
+                                task.kind === "task" && task.completed
+                                  ? "text-subtle line-through"
+                                  : "text-ink"
+                              }`}
+                            >
+                              {task.title}
+                            </span>
+                            {task.kind === "event" && (
+                              <span className="shrink-0 rounded bg-[#9b59d0]/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#7d3cb5]">
+                                Event
+                              </span>
+                            )}
+                            {task.repeat !== "none" && (
+                              <span title={REPEAT_LABELS[task.repeat]} className="shrink-0 text-subtle">
+                                <RepeatIcon />
+                              </span>
+                            )}
+                          </div>
+                          {task.description && (
+                            <p className="mt-0.5 truncate text-xs text-subtle">{task.description}</p>
+                          )}
+                        </div>
 
-                        {task.kind === "event" && (
-                          <span className="shrink-0 rounded bg-[#9b59d0]/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#7d3cb5]">
-                            Event
-                          </span>
-                        )}
-                        {task.repeat !== "none" && (
-                          <span title={REPEAT_LABELS[task.repeat]} className="shrink-0 text-subtle">
-                            <RepeatIcon />
-                          </span>
-                        )}
-
-                        <button
-                          aria-label="Delete"
-                          onClick={() => deleteTask(task)}
-                          className="shrink-0 rounded px-2 py-1 text-xs text-subtle opacity-0 transition hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
-                        >
-                          Delete
-                        </button>
+                        <EditButton task={task} />
+                        <DeleteButton task={task} />
                       </div>
                     ))}
                   </div>
@@ -338,6 +356,10 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
             })}
           </div>
         </section>
+      )}
+
+      {editing && (
+        <EditItemModal task={editing} onClose={() => setEditing(null)} onSave={saveEdit} />
       )}
     </div>
   );
