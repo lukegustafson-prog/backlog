@@ -18,6 +18,7 @@
     "@libsql/client": "^0.17.4",
     "@prisma/adapter-libsql": "^6.19.3",
     "@prisma/client": "^6.2.1",
+    "chrono-node": "^2.10.1",
     "next": "^15.1.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

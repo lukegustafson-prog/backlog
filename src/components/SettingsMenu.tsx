@@ -3,13 +3,20 @@
 import { useEffect, useState } from "react";
 
 const THEME_KEY = "backlog-theme";
+export const VOICE_AUTOADD_KEY = "backlog-voice-autoadd";
 
 export default function SettingsMenu() {
   const [open, setOpen] = useState(false);
   const [dark, setDark] = useState(false);
+  const [autoAdd, setAutoAdd] = useState(false);
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));
+    try {
+      setAutoAdd(localStorage.getItem(VOICE_AUTOADD_KEY) === "true");
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   function setTheme(nextDark: boolean) {
@@ -17,6 +24,15 @@ export default function SettingsMenu() {
     document.documentElement.classList.toggle("dark", nextDark);
     try {
       localStorage.setItem(THEME_KEY, nextDark ? "dark" : "light");
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function setVoiceAutoAdd(next: boolean) {
+    setAutoAdd(next);
+    try {
+      localStorage.setItem(VOICE_AUTOADD_KEY, next ? "true" : "false");
     } catch {
       /* ignore */
     }
@@ -38,33 +54,57 @@ export default function SettingsMenu() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-50 mt-2 w-56 rounded-lg border border-line bg-surface p-3 shadow-xl">
+          <div className="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-line bg-surface p-3 shadow-xl">
             <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-subtle">
               Settings
             </p>
-            <label className="flex cursor-pointer items-center justify-between rounded-md px-1 py-1.5 text-sm text-ink">
-              <span>Dark mode</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={dark}
-                aria-label="Dark mode"
-                onClick={() => setTheme(!dark)}
-                className={`relative h-5 w-9 rounded-full transition ${
-                  dark ? "bg-[#2383e2]" : "bg-line"
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${
-                    dark ? "left-[1.125rem]" : "left-0.5"
-                  }`}
-                />
-              </button>
-            </label>
+
+            <Row label="Dark mode">
+              <Switch checked={dark} onChange={() => setTheme(!dark)} ariaLabel="Dark mode" />
+            </Row>
+
+            <Row label="Auto-add voice events" hint="Off: review before saving">
+              <Switch
+                checked={autoAdd}
+                onChange={() => setVoiceAutoAdd(!autoAdd)}
+                ariaLabel="Auto-add voice events"
+              />
+            </Row>
           </div>
         </>
       )}
     </div>
+  );
+}
+
+function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-md px-1 py-1.5">
+      <div>
+        <p className="text-sm text-ink">{label}</p>
+        {hint && <p className="text-xs text-subtle">{hint}</p>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Switch({ checked, onChange, ariaLabel }: { checked: boolean; onChange: () => void; ariaLabel: string }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={ariaLabel}
+      onClick={onChange}
+      className={`relative h-5 w-9 shrink-0 rounded-full transition ${checked ? "bg-[#2383e2]" : "bg-line"}`}
+    >
+      <span
+        className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${
+          checked ? "left-[1.125rem]" : "left-0.5"
+        }`}
+      />
+    </button>
   );
 }
 

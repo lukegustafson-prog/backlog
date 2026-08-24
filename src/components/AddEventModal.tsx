@@ -7,19 +7,16 @@ import {
   REPEATS,
   WEEKDAY_SHORT,
   type CustomUnit,
-  type Kind,
   type Repeat,
 } from "@/lib/tasks";
 import { addMonthsKey, formatLongDate, weekdayOf } from "@/lib/date";
 import TimePicker from "./TimePicker";
 
-export interface NewTaskPayload {
+export interface NewEventPayload {
   title: string;
   date: string;
   description: string;
-  allDay: boolean;
   time: string;
-  kind: Kind;
   repeat: Repeat;
   occurrences: number;
   custom?: {
@@ -32,30 +29,30 @@ export interface NewTaskPayload {
   };
 }
 
-interface AddTaskModalProps {
-  dateKey: string;
-  onClose: () => void;
-  onCreate: (payload: NewTaskPayload) => Promise<void>;
+export interface EventPrefill {
+  title?: string;
+  time?: string;
+  notes?: string;
 }
 
-const UNIT_LABELS: Record<CustomUnit, string> = {
-  day: "day",
-  week: "week",
-  month: "month",
-};
+interface AddEventModalProps {
+  dateKey: string;
+  prefill?: EventPrefill;
+  onClose: () => void;
+  onCreate: (payload: NewEventPayload) => Promise<void>;
+}
 
-export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModalProps) {
-  const [kind, setKind] = useState<Kind>("task");
-  const [title, setTitle] = useState("");
-  const [notes, setNotes] = useState("");
+const UNIT_LABELS: Record<CustomUnit, string> = { day: "day", week: "week", month: "month" };
+
+export default function AddEventModal({ dateKey, prefill, onClose, onCreate }: AddEventModalProps) {
+  const [title, setTitle] = useState(prefill?.title ?? "");
+  const [notes, setNotes] = useState(prefill?.notes ?? "");
+  const [time, setTime] = useState(prefill?.time ?? "09:00");
   const [repeat, setRepeat] = useState<Repeat>("none");
   const [occurrences, setOccurrences] = useState(10);
   const [saving, setSaving] = useState(false);
 
-  // Event time (hour + minute + AM/PM)
-  const [eventTime, setEventTime] = useState("09:00");
-
-  // Custom recurrence state
+  // Custom recurrence
   const [interval, setIntervalValue] = useState(1);
   const [unit, setUnit] = useState<CustomUnit>("week");
   const [weekdays, setWeekdays] = useState<number[]>([weekdayOf(dateKey)]);
@@ -82,34 +79,22 @@ export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModa
     if (!title.trim() || saving) return;
     setSaving(true);
     try {
-      const isEvent = kind === "event";
       await onCreate({
         title: title.trim(),
         date: dateKey,
         description: notes.trim(),
-        allDay: !isEvent,
-        time: isEvent ? eventTime : "",
-        kind,
+        time,
         repeat,
         occurrences,
         custom:
           repeat === "custom"
-            ? {
-                interval,
-                unit,
-                weekdays: unit === "week" ? weekdays : [],
-                endType,
-                count: customCount,
-                until,
-              }
+            ? { interval, unit, weekdays: unit === "week" ? weekdays : [], endType, count: customCount, until }
             : undefined,
       });
     } finally {
       setSaving(false);
     }
   }
-
-  const accent = "#2383e2";
 
   return (
     <div
@@ -134,41 +119,10 @@ export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModa
           </div>
 
           <div className="space-y-4 px-5 py-4">
-            <div className="inline-flex rounded-lg bg-hover p-0.5 text-sm">
-              {(["task", "event"] as Kind[]).map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => setKind(k)}
-                  className={`rounded-md px-4 py-1.5 font-medium capitalize transition ${
-                    kind === k ? "bg-surface text-ink shadow-sm" : "text-subtle"
-                  }`}
-                >
-                  {k}
-                </button>
-              ))}
+            <div className="flex items-center gap-3">
+              <span className="w-24 shrink-0 text-sm text-subtle">Time</span>
+              <TimePicker value={time} onChange={setTime} />
             </div>
-
-            {kind === "task" ? (
-              <p className="-mt-2 flex items-center gap-2 text-xs text-subtle">
-                Tasks start unscheduled — use{" "}
-                <span className="rounded bg-hover px-1.5 py-0.5 font-medium text-ink">
-                  Assign to time
-                </span>{" "}
-                on the timeline to place them.
-              </p>
-            ) : (
-              <p className="-mt-2 text-xs text-subtle">
-                Events need a time and show on the timeline (no checkbox).
-              </p>
-            )}
-
-            {kind === "event" && (
-              <div className="flex items-center gap-3">
-                <span className="w-24 shrink-0 text-sm text-subtle">Time</span>
-                <TimePicker value={eventTime} onChange={setEventTime} />
-              </div>
-            )}
 
             <div className="flex items-start gap-3">
               <span className="w-24 shrink-0 pt-2 text-sm text-subtle">Notes</span>
@@ -320,10 +274,9 @@ export default function AddTaskModal({ dateKey, onClose, onCreate }: AddTaskModa
             <button
               type="submit"
               disabled={!title.trim() || saving}
-              style={{ backgroundColor: accent }}
-              className="rounded-md px-5 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-md bg-[#2383e2] px-5 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {saving ? "Saving…" : "Save"}
+              {saving ? "Saving…" : "Save event"}
             </button>
           </div>
         </form>

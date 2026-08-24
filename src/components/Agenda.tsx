@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   addDaysKey,
   addMonthsKey,
@@ -9,38 +9,39 @@ import {
   relativeDayLabel,
   todayKey,
 } from "@/lib/date";
-import AddTaskModal, { type NewTaskPayload } from "./AddTaskModal";
+import { timeString } from "@/lib/time";
+import AddEventModal, { type EventPrefill, type NewEventPayload } from "./AddEventModal";
 import DayView from "./DayView";
 import MonthView from "./MonthView";
-import SymptomDayView from "./SymptomDayView";
-import SettingsMenu from "./SettingsMenu";
-import QuickAdd from "./QuickAdd";
+import SettingsMenu, { VOICE_AUTOADD_KEY } from "./SettingsMenu";
+import VoiceCapture from "./VoiceCapture";
 
 type View = "day" | "month";
-type Mode = "productivity" | "symptoms";
-
-const MODE_STORAGE_KEY = "backlog-mode";
 
 export default function Agenda() {
-  const [mode, setMode] = useState<Mode>("productivity");
   const [view, setView] = useState<View>("day");
   const [dateKey, setDateKey] = useState(todayKey());
   const [modalOpen, setModalOpen] = useState(false);
+  const [prefill, setPrefill] = useState<EventPrefill | undefined>(undefined);
   const [version, setVersion] = useState(0);
+  const [parsing, setParsing] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const isMonth = view === "month";
+  const relative = !isMonth ? relativeDayLabel(dateKey) : null;
 
   useEffect(() => {
-    const saved = localStorage.getItem(MODE_STORAGE_KEY);
-    if (saved === "symptoms" || saved === "productivity") setMode(saved);
+    return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    };
   }, []);
 
-  function changeMode(next: Mode) {
-    setMode(next);
-    localStorage.setItem(MODE_STORAGE_KEY, next);
-    if (next === "symptoms") setView("day");
+  function showToast(message: string) {
+    setToast(message);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 3500);
   }
-
-  const isMonth = mode === "productivity" && view === "month";
-  const relative = !isMonth ? relativeDayLabel(dateKey) : null;
 
   function goPrev() {
     setDateKey((k) => (isMonth ? addMonthsKey(k, -1) : addDaysKey(k, -1)));
@@ -49,7 +50,7 @@ export default function Agenda() {
     setDateKey((k) => (isMonth ? addMonthsKey(k, 1) : addDaysKey(k, 1)));
   }
 
-  async function createTask(payload: NewTaskPayload) {
+  async function createEvent(payload: NewEventPayload) {
     const res = await fetch("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -57,7 +58,72 @@ export default function Agenda() {
     });
     if (!res.ok) return;
     setModalOpen(false);
+    setPrefill(undefined);
     setVersion((v) => v + 1);
+  }
+
+  async function handleTranscript(text: string) {
+    setParsing(true);
+    try {
+      const now = new Date();
+      const res = await fetch("/api/parse-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transcript: text,
+          todayKey: todayKey(),
+          localTime: timeString(now.getHours(), now.getMinutes()),
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
+      });
+      if (!res.ok) {
+        showToast("Sorry, couldn't understand that. Try again.");
+        return;
+      }
+      const parsed = (await res.json()) as {
+        title: string;
+        date: string;
+        time: string;
+        notes: string;
+      };
+
+      let autoAdd = false;
+      try {
+        autoAdd = localStorage.getItem(VOICE_AUTOADD_KEY) === "true";
+      } catch {
+        /* ignore */
+      }
+
+      setDateKey(parsed.date);
+      setView("day");
+
+      if (autoAdd) {
+        const createRes = await fetch("/api/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: parsed.title,
+            date: parsed.date,
+            time: parsed.time,
+            description: parsed.notes,
+            repeat: "none",
+          }),
+        });
+        if (createRes.ok) {
+          setVersion((v) => v + 1);
+          showToast(`Added "${parsed.title}"`);
+        } else {
+          showToast("Couldn't save the event.");
+        }
+      } else {
+        setPrefill({ title: parsed.title, time: parsed.time, notes: parsed.notes });
+        setModalOpen(true);
+      }
+    } catch {
+      showToast("Something went wrong. Try again.");
+    } finally {
+      setParsing(false);
+    }
   }
 
   async function lock() {
@@ -70,26 +136,11 @@ export default function Agenda() {
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      {/* Mode switch (top left) + lock */}
       <div className="mb-8 flex items-center justify-between gap-4">
-        <div className="inline-flex rounded-lg bg-hover p-0.5 text-sm">
-          <button
-            onClick={() => changeMode("productivity")}
-            className={`rounded-md px-3 py-1.5 font-medium transition ${
-              mode === "productivity" ? "bg-surface text-ink shadow-sm" : "text-subtle"
-            }`}
-          >
-            Productivity
-          </button>
-          <button
-            onClick={() => changeMode("symptoms")}
-            className={`rounded-md px-3 py-1.5 font-medium transition ${
-              mode === "symptoms" ? "bg-surface text-ink shadow-sm" : "text-subtle"
-            }`}
-          >
-            Symptoms
-          </button>
-        </div>
+        <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+          <span className="grid h-6 w-6 place-items-center rounded-md bg-[#2383e2] text-xs text-white">B</span>
+          Backlog
+        </span>
         <div className="flex items-center gap-1">
           <SettingsMenu />
           <button
@@ -102,20 +153,15 @@ export default function Agenda() {
         </div>
       </div>
 
-      <header className="mb-8">
+      <header className="mb-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             {relative && (
-              <p className="text-sm font-medium uppercase tracking-wide text-[#2383e2]">
-                {relative}
-              </p>
+              <p className="text-sm font-medium uppercase tracking-wide text-[#2383e2]">{relative}</p>
             )}
             <h1 className="text-3xl font-semibold tracking-tight text-ink">
               {isMonth ? "Calendar" : formatLongDate(dateKey)}
             </h1>
-            {mode === "symptoms" && (
-              <p className="mt-1 text-sm text-subtle">Symptom tracker</p>
-            )}
           </div>
 
           <div className="flex items-center gap-1">
@@ -140,67 +186,66 @@ export default function Agenda() {
             >
               <ChevronRight />
             </button>
-            {mode === "productivity" && (
-              <button
-                aria-label={view === "day" ? "Switch to calendar view" : "Switch to day view"}
-                title={view === "day" ? "Calendar view" : "Day view"}
-                onClick={() => setView((v) => (v === "day" ? "month" : "day"))}
-                className={`grid h-9 w-9 place-items-center rounded-md border transition ${
-                  view === "month"
-                    ? "border-[#2383e2] bg-[#2383e2]/10 text-[#2383e2]"
-                    : "border-line text-ink hover:bg-hover"
-                }`}
-              >
-                {view === "day" ? <CalendarIcon /> : <ListIcon />}
-              </button>
-            )}
+            <button
+              aria-label={view === "day" ? "Switch to calendar view" : "Switch to day view"}
+              title={view === "day" ? "Calendar view" : "Day view"}
+              onClick={() => setView((v) => (v === "day" ? "month" : "day"))}
+              className={`grid h-9 w-9 place-items-center rounded-md border transition ${
+                view === "month"
+                  ? "border-[#2383e2] bg-[#2383e2]/10 text-[#2383e2]"
+                  : "border-line text-ink hover:bg-hover"
+              }`}
+            >
+              {view === "day" ? <CalendarIcon /> : <ListIcon />}
+            </button>
           </div>
         </div>
       </header>
 
-      {mode === "symptoms" ? (
-        <SymptomDayView
+      {/* Voice quick capture */}
+      <div className="mb-3">
+        <VoiceCapture onTranscript={handleTranscript} busy={parsing} />
+      </div>
+
+      <button
+        onClick={() => {
+          setPrefill(undefined);
+          setModalOpen(true);
+        }}
+        className="mb-4 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-line px-4 py-2.5 text-sm font-medium text-subtle transition hover:border-[#2383e2] hover:text-[#2383e2]"
+      >
+        <span className="text-lg leading-none">+</span> Add event manually
+      </button>
+
+      {toast && (
+        <div className="mb-4 rounded-md border border-[#2383e2]/30 bg-[#2383e2]/10 px-4 py-2.5 text-sm text-ink">
+          {toast}
+        </div>
+      )}
+
+      {view === "day" ? (
+        <DayView dateKey={dateKey} version={version} onChanged={() => setVersion((v) => v + 1)} />
+      ) : (
+        <MonthView
           dateKey={dateKey}
           version={version}
-          onChanged={() => setVersion((v) => v + 1)}
+          onSelectDay={(key) => {
+            setDateKey(key);
+            setView("day");
+          }}
         />
-      ) : (
-        <>
-          <div className="mb-4 flex items-stretch gap-2">
-            <button
-              onClick={() => setModalOpen(true)}
-              className="flex flex-1 items-center gap-2 rounded-lg border border-dashed border-line px-4 py-3 text-left text-sm font-medium text-subtle transition hover:border-[#2383e2] hover:text-[#2383e2]"
-            >
-              <span className="text-lg leading-none">+</span> Add task or event
-            </button>
-            <QuickAdd dateKey={dateKey} onAdded={() => setVersion((v) => v + 1)} />
-          </div>
+      )}
 
-          {view === "day" ? (
-            <DayView
-              dateKey={dateKey}
-              version={version}
-              onChanged={() => setVersion((v) => v + 1)}
-            />
-          ) : (
-            <MonthView
-              dateKey={dateKey}
-              version={version}
-              onSelectDay={(key) => {
-                setDateKey(key);
-                setView("day");
-              }}
-            />
-          )}
-
-          {modalOpen && (
-            <AddTaskModal
-              dateKey={dateKey}
-              onClose={() => setModalOpen(false)}
-              onCreate={createTask}
-            />
-          )}
-        </>
+      {modalOpen && (
+        <AddEventModal
+          dateKey={dateKey}
+          prefill={prefill}
+          onClose={() => {
+            setModalOpen(false);
+            setPrefill(undefined);
+          }}
+          onCreate={createEvent}
+        />
       )}
     </main>
   );

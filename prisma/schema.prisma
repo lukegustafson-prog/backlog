@@ -7,14 +7,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Events. (The table keeps its original name/columns to stay compatible with
+// the deployed database; the app now treats every row as a timed event.)
 model Task {
   id          String   @id @default(cuid())
   seriesId    String?
-  kind        String   @default("task")
+  kind        String   @default("event")
   title       String
   description String   @default("")
   date        DateTime
-  allDay      Boolean  @default(true)
+  allDay      Boolean  @default(false)
   time        String   @default("")
   completed   Boolean  @default(false)
   repeat      String   @default("none")
@@ -23,37 +25,4 @@ model Task {
 
   @@index([date])
   @@index([seriesId])
-}
-
-// Symptom-tracker mode: a logged symptom ("events are symptoms").
-model Symptom {
-  id        String   @id @default(cuid())
-  feeling   String
-  // Only set when feeling is "just_pooped".
-  volume    Int?
-  emptied   Boolean?
-  date      DateTime
-  time      String   @default("")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([date])
-}
-
-// Symptom-tracker mode: a named food with nutrition facts.
-model Food {
-  id        String   @id @default(cuid())
-  name      String
-  calories  Float    @default(0)
-  protein   Float    @default(0)
-  fat       Float    @default(0)
-  sugar     Float    @default(0)
-  carbs     Float    @default(0)
-  fiber     Float    @default(0)
-  date      DateTime
-  time      String   @default("")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([date])
 }
