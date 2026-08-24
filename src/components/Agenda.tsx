@@ -135,7 +135,7 @@ export default function Agenda() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
+    <main className="mx-auto w-full max-w-[430px] px-4 py-8">
       <div className="mb-8 flex items-center justify-between gap-4">
         <span className="flex items-center gap-2 text-sm font-semibold text-ink">
           <span className="grid h-6 w-6 place-items-center rounded-md bg-[#2383e2] text-xs text-white">B</span>

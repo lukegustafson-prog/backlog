@@ -24,9 +24,17 @@
 
 html,
 body {
-  background: rgb(var(--canvas));
   color: rgb(var(--ink));
-  min-height: 100vh;
+  min-height: 100%;
+}
+
+/* Neutral backdrop behind the phone frame (matches PhoneFrame). */
+body {
+  background: #e5e5e5;
+}
+
+.dark body {
+  background: #0a0a0a;
 }
 
 * {

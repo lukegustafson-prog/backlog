@@ -1,9 +1,16 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import PhoneFrame from "@/components/PhoneFrame";
 
 export const metadata: Metadata = {
   title: "Backlog",
   description: "A clean daily agenda for your tasks.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 // Applied before paint to avoid a flash of the wrong theme.
@@ -17,7 +24,9 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="bg-canvas text-ink">{children}</body>
+      <body className="text-ink">
+        <PhoneFrame>{children}</PhoneFrame>
+      </body>
     </html>
   );
 }
