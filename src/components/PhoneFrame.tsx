@@ -9,8 +9,8 @@
  */
 export default function PhoneFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-[100dvh] w-full justify-center bg-neutral-200 dark:bg-neutral-950 sm:py-6">
-      <div className="relative w-full max-w-[430px] min-h-[100dvh] overflow-x-hidden bg-canvas [transform:translateZ(0)] sm:h-[calc(100dvh-3rem)] sm:min-h-0 sm:max-h-[920px] sm:overflow-y-auto sm:rounded-[2.25rem] sm:border sm:border-line sm:shadow-2xl">
+    <div className="flex min-h-[100dvh] w-full justify-center bg-neutral-200 dark:bg-neutral-950 sm:py-4">
+      <div className="relative w-full max-w-[393px] min-h-[100dvh] overflow-x-hidden bg-canvas [transform:translateZ(0)] sm:h-[min(852px,calc(100dvh-2rem))] sm:min-h-0 sm:overflow-y-auto sm:rounded-[2.75rem] sm:border sm:border-line sm:shadow-2xl">
         {children}
       </div>
     </div>

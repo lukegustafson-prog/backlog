@@ -22,6 +22,11 @@
   --canvas: 25 25 24;
 }
 
+html {
+  /* Smaller base size for a compact, phone-like scale (Tailwind rem sizes follow). */
+  font-size: 14px;
+}
+
 html,
 body {
   color: rgb(var(--ink));
