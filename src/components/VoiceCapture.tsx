@@ -17,18 +17,40 @@ type SpeechRecognitionLike = {
   start: () => void;
   stop: () => void;
   abort: () => void;
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onstart: (() => void) | null;
+  onresult: ((event: {
+    results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }>;
+  }) => void) | null;
   onend: (() => void) | null;
   onerror: ((event: { error?: string }) => void) | null;
+};
+
+const ERROR_MESSAGES: Record<string, string> = {
+  "no-speech": "Didn't hear anything — try again and speak right after tapping.",
+  "audio-capture": "No microphone was found on this device.",
+  "not-allowed": "Microphone permission is blocked. Enable it in your browser settings.",
+  "service-not-allowed": "Microphone permission is blocked. Enable it in your browser settings.",
+  network: "Couldn't reach the speech service. Check your connection and try again.",
+  aborted: "Voice input was cancelled.",
 };
 
 export default function VoiceCapture({ onTranscript, busy, label = "Speak to add event" }: VoiceCaptureProps) {
   const [supported, setSupported] = useState(true);
   const [listening, setListening] = useState(false);
+  const [heard, setHeard] = useState("");
   const [note, setNote] = useState<string | null>(null);
+
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const cbRef = useRef(onTranscript);
   cbRef.current = onTranscript;
+  const gotFinalRef = useRef(false);
+  const errorRef = useRef(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearTimer = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = null;
+  };
 
   useEffect(() => {
     const w = window as unknown as {
@@ -43,21 +65,53 @@ export default function VoiceCapture({ onTranscript, busy, label = "Speak to add
     const rec = new SR();
     rec.lang = "en-US";
     rec.continuous = false;
-    rec.interimResults = false;
+    rec.interimResults = true;
     rec.maxAlternatives = 1;
-    rec.onresult = (event) => {
-      const text = event.results?.[0]?.[0]?.transcript ?? "";
-      if (text) cbRef.current(text);
+
+    rec.onstart = () => {
+      gotFinalRef.current = false;
+      errorRef.current = false;
+      setHeard("");
+      setNote(null);
     };
-    rec.onend = () => setListening(false);
+    rec.onresult = (event) => {
+      let interim = "";
+      let final = "";
+      for (let i = 0; i < event.results.length; i++) {
+        const res = event.results[i];
+        const text = res[0]?.transcript ?? "";
+        if (res.isFinal) final += text;
+        else interim += text;
+      }
+      setHeard(final || interim);
+      if (final.trim()) {
+        gotFinalRef.current = true;
+        clearTimer();
+        cbRef.current(final.trim());
+        try {
+          rec.stop();
+        } catch {
+          /* ignore */
+        }
+      }
+    };
     rec.onerror = (event) => {
+      errorRef.current = true;
+      clearTimer();
       setListening(false);
-      if (event?.error === "not-allowed" || event?.error === "service-not-allowed") {
-        setNote("Microphone permission is blocked. Enable it in your browser settings.");
+      const code = event?.error ?? "";
+      setNote(ERROR_MESSAGES[code] ?? "Voice input failed. Try again, or type the event.");
+    };
+    rec.onend = () => {
+      clearTimer();
+      setListening(false);
+      if (!gotFinalRef.current && !errorRef.current) {
+        setNote("Didn't catch that — try again, or type the event below.");
       }
     };
     recRef.current = rec;
     return () => {
+      clearTimer();
       try {
         rec.abort();
       } catch {
@@ -69,25 +123,50 @@ export default function VoiceCapture({ onTranscript, busy, label = "Speak to add
   const toggle = useCallback(() => {
     const rec = recRef.current;
     if (!rec) return;
-    setNote(null);
     if (listening) {
-      rec.stop();
+      try {
+        rec.stop();
+      } catch {
+        /* ignore */
+      }
       setListening(false);
+      clearTimer();
       return;
     }
+    setNote(null);
+    setHeard("");
     try {
       rec.start();
       setListening(true);
+      // Safety net: if the engine never returns (some browsers accept the API
+      // but never produce a result), don't hang in the "listening" state.
+      clearTimer();
+      timeoutRef.current = setTimeout(() => {
+        if (!gotFinalRef.current) {
+          try {
+            rec.stop();
+          } catch {
+            /* ignore */
+          }
+          setListening(false);
+          if (!gotFinalRef.current && !errorRef.current) {
+            setNote(
+              "No response from the speech service. Your browser may not support voice input — try Chrome, or type the event below.",
+            );
+          }
+        }
+      }, 9000);
     } catch {
       setListening(false);
+      clearTimer();
     }
   }, [listening]);
 
   if (!supported) {
     return (
-      <p className="text-xs text-subtle">
+      <p className="rounded-lg border border-line bg-hover/40 px-4 py-3 text-xs text-subtle">
         Voice input isn&apos;t supported in this browser. Tip: use your phone keyboard&apos;s
-        microphone in the title field instead.
+        microphone in the title field, or open the site in Chrome.
       </p>
     );
   }
@@ -105,6 +184,9 @@ export default function VoiceCapture({ onTranscript, busy, label = "Speak to add
         <MicIcon />
         {busy ? "Thinking…" : listening ? "Listening… tap to stop" : label}
       </button>
+      {listening && heard && (
+        <p className="mt-2 text-xs text-subtle">Heard: “{heard}”</p>
+      )}
       {note && <p className="mt-2 text-xs text-red-600">{note}</p>}
     </div>
   );
