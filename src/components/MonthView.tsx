@@ -68,7 +68,8 @@ export default function MonthView({ dateKey, version, onSelectDay }: MonthViewPr
             <button
               key={key}
               onClick={() => onSelectDay(key)}
-              className={`relative min-h-[84px] border-b border-r border-line p-2 text-left transition hover:bg-hover ${
+              title={count > 0 ? `${count} event${count === 1 ? "" : "s"}` : undefined}
+              className={`relative flex min-h-[52px] flex-col items-center gap-1 border-b border-r border-line px-1 py-1.5 transition hover:bg-hover ${
                 count > 0 ? "bg-[#2383e2]/5" : "bg-surface"
               } ${inMonth ? "" : "opacity-40"}`}
             >
@@ -80,9 +81,9 @@ export default function MonthView({ dateKey, version, onSelectDay }: MonthViewPr
                 {dayOfMonth(key)}
               </span>
               {count > 0 && (
-                <span className="absolute bottom-2 left-2 flex items-center gap-1 text-[11px] font-medium text-[#2383e2]">
+                <span className="flex items-center gap-0.5 text-[10px] font-medium text-[#2383e2]">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#2383e2]" />
-                  {count} event{count === 1 ? "" : "s"}
+                  {count}
                 </span>
               )}
             </button>
