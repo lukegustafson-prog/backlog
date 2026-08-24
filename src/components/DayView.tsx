@@ -128,49 +128,40 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
                     }`}
                   />
                 </div>
-                <div className="min-h-[2.75rem] flex-1 space-y-2 py-1.5">
+                <div className="min-h-[2.5rem] flex-1 space-y-1.5 py-1">
                   {items.map((event) => (
-                    <div
+                    <button
                       key={event.id}
-                      className="group flex items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2 transition hover:bg-hover"
+                      onClick={() => setEditing(event)}
+                      aria-label={`Edit ${event.title}`}
+                      className="flex w-full items-start gap-2 rounded-lg border border-line bg-surface px-2.5 py-2 text-left transition hover:bg-hover"
                     >
-                      <span aria-label="Event" className="mt-1 grid h-4 w-4 shrink-0 place-items-center self-start">
-                        <span className="h-2.5 w-2.5 rounded-[3px] bg-[#9b59d0]" />
+                      <span aria-hidden className="mt-1 grid h-3.5 w-3.5 shrink-0 place-items-center">
+                        <span className="h-2 w-2 rounded-[2px] bg-[#9b59d0]" />
                       </span>
 
-                      <span className="mt-0.5 shrink-0 self-start rounded bg-hover px-1.5 py-0.5 text-xs font-medium text-subtle">
+                      <span className="mt-px shrink-0 rounded bg-hover px-1.5 py-0.5 text-[11px] font-medium text-subtle">
                         {formatTime(event.time)}
                       </span>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate text-sm text-ink">{event.title}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-start gap-1.5">
+                          <span className="flex-1 break-words text-sm leading-snug text-ink">
+                            {event.title}
+                          </span>
                           {event.repeat !== "none" && (
-                            <span title={REPEAT_LABELS[event.repeat]} className="shrink-0 text-subtle">
+                            <span title={REPEAT_LABELS[event.repeat]} className="mt-0.5 shrink-0 text-subtle">
                               <RepeatIcon />
                             </span>
                           )}
-                        </div>
+                        </span>
                         {event.description && (
-                          <p className="mt-0.5 truncate text-xs text-subtle">{event.description}</p>
+                          <span className="mt-0.5 block break-words text-xs leading-snug text-subtle">
+                            {event.description}
+                          </span>
                         )}
-                      </div>
-
-                      <button
-                        aria-label="Edit"
-                        onClick={() => setEditing(event)}
-                        className="shrink-0 rounded px-2 py-1 text-xs text-subtle opacity-0 transition hover:bg-hover hover:text-ink group-hover:opacity-100"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        aria-label="Delete"
-                        onClick={() => deleteEvent(event)}
-                        className="shrink-0 rounded px-2 py-1 text-xs text-subtle opacity-0 transition hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                      </span>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -180,7 +171,16 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
       )}
 
       {editing && (
-        <EditItemModal task={editing} onClose={() => setEditing(null)} onSave={saveEdit} />
+        <EditItemModal
+          task={editing}
+          onClose={() => setEditing(null)}
+          onSave={saveEdit}
+          onDelete={() => {
+            const ev = editing;
+            setEditing(null);
+            deleteEvent(ev);
+          }}
+        />
       )}
     </div>
   );

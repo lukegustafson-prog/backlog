@@ -135,10 +135,10 @@ export default function Agenda() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[430px] px-4 py-8">
-      <div className="mb-8 flex items-center justify-between gap-4">
+    <main className="mx-auto w-full max-w-[393px] px-4 py-3">
+      <div className="mb-3 flex items-center justify-between gap-4">
         <span className="flex items-center gap-2 text-sm font-semibold text-ink">
-          <span className="grid h-6 w-6 place-items-center rounded-md bg-[#2383e2] text-xs text-white">B</span>
+          <span className="grid h-5 w-5 place-items-center rounded-md bg-[#2383e2] text-[10px] text-white">B</span>
           Backlog
         </span>
         <div className="flex items-center gap-1">
@@ -153,13 +153,13 @@ export default function Agenda() {
         </div>
       </div>
 
-      <header className="mb-6">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+      <header className="mb-3">
+        <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             {relative && (
-              <p className="text-sm font-medium uppercase tracking-wide text-[#2383e2]">{relative}</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-[#2383e2]">{relative}</p>
             )}
-            <h1 className="text-3xl font-semibold tracking-tight text-ink">
+            <h1 className="text-lg font-semibold tracking-tight text-ink">
               {isMonth ? "Calendar" : formatLongDate(dateKey)}
             </h1>
           </div>
