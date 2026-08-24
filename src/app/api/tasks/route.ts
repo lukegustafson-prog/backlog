@@ -1,65 +1,49 @@
 import { NextResponse } from "next/server";
+import { isRepeat, type Repeat, type CustomUnit, CUSTOM_UNITS } from "@/lib/tasks";
 import { prisma } from "@/lib/prisma";
-import { isKind, isRepeat, type Repeat, type CustomUnit, CUSTOM_UNITS } from "@/lib/tasks";
 import { addDaysKey, dayKeyToDate, isValidDayKey } from "@/lib/date";
 import { isValidTime } from "@/lib/time";
 import { generateOccurrences, type OccurrenceSpec } from "@/lib/recurrence";
+
+// Every row is a timed event.
+const EVENT_WHERE = { kind: "event" as const };
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const dateKey = searchParams.get("date");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
-  const recentTitles = searchParams.get("recentTitles");
-
-  if (recentTitles) {
-    const limit = Math.min(Math.max(Number(recentTitles) || 8, 1), 20);
-    const recent = await prisma.task.findMany({
-      where: { kind: "task" },
-      orderBy: { createdAt: "desc" },
-      take: 60,
-      select: { title: true },
-    });
-    const seen = new Set<string>();
-    const titles: string[] = [];
-    for (const { title } of recent) {
-      if (!seen.has(title)) {
-        seen.add(title);
-        titles.push(title);
-      }
-      if (titles.length >= limit) break;
-    }
-    return NextResponse.json(titles);
-  }
 
   if (dateKey) {
     if (!isValidDayKey(dateKey)) {
       return NextResponse.json({ error: "Invalid date" }, { status: 400 });
     }
-    const tasks = await prisma.task.findMany({
+    const events = await prisma.task.findMany({
       where: {
+        ...EVENT_WHERE,
         date: { gte: dayKeyToDate(dateKey), lt: dayKeyToDate(addDaysKey(dateKey, 1)) },
       },
-      orderBy: [{ allDay: "desc" }, { time: "asc" }, { createdAt: "asc" }],
+      orderBy: [{ time: "asc" }, { createdAt: "asc" }],
     });
-    return NextResponse.json(tasks);
+    return NextResponse.json(events);
   }
 
   if (from && to) {
     if (!isValidDayKey(from) || !isValidDayKey(to)) {
       return NextResponse.json({ error: "Invalid range" }, { status: 400 });
     }
-    const tasks = await prisma.task.findMany({
-      where: { date: { gte: dayKeyToDate(from), lt: dayKeyToDate(to) } },
-      orderBy: [{ date: "asc" }, { allDay: "desc" }, { time: "asc" }],
+    const events = await prisma.task.findMany({
+      where: { ...EVENT_WHERE, date: { gte: dayKeyToDate(from), lt: dayKeyToDate(to) } },
+      orderBy: [{ date: "asc" }, { time: "asc" }],
     });
-    return NextResponse.json(tasks);
+    return NextResponse.json(events);
   }
 
-  const tasks = await prisma.task.findMany({
+  const events = await prisma.task.findMany({
+    where: EVENT_WHERE,
     orderBy: [{ date: "asc" }, { time: "asc" }],
   });
-  return NextResponse.json(tasks);
+  return NextResponse.json(events);
 }
 
 function specFromBody(data: Record<string, unknown>, repeat: Repeat, startKey: string): OccurrenceSpec {
@@ -110,28 +94,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A valid date is required" }, { status: 400 });
   }
 
-  const kind = isKind(data.kind) ? data.kind : "task";
-  const repeat: Repeat = isRepeat(data.repeat) ? data.repeat : "none";
-  const description = typeof data.description === "string" ? data.description.trim() : "";
-
-  let allDay: boolean;
-  let time: string;
-  if (kind === "event") {
-    if (!isValidTime(data.time)) {
-      return NextResponse.json({ error: "Events require a time" }, { status: 400 });
-    }
-    allDay = false;
-    time = data.time;
-  } else {
-    allDay = data.allDay === undefined ? true : Boolean(data.allDay);
-    time = !allDay && isValidTime(data.time) ? data.time : "";
+  if (!isValidTime(data.time)) {
+    return NextResponse.json({ error: "A valid time is required" }, { status: 400 });
   }
+  const time = data.time as string;
+  const description = typeof data.description === "string" ? data.description.trim() : "";
+  const repeat: Repeat = isRepeat(data.repeat) ? data.repeat : "none";
+
+  const base = { kind: "event", title, description, allDay: false, time, repeat };
 
   if (repeat === "none") {
-    const task = await prisma.task.create({
-      data: { kind, title, description, date: dayKeyToDate(dateKey), allDay, time, repeat },
+    const event = await prisma.task.create({
+      data: { ...base, date: dayKeyToDate(dateKey) },
     });
-    return NextResponse.json(task, { status: 201 });
+    return NextResponse.json(event, { status: 201 });
   }
 
   const spec = specFromBody(data, repeat, dateKey);
@@ -139,16 +115,7 @@ export async function POST(request: Request) {
   const seriesId = crypto.randomUUID();
 
   await prisma.task.createMany({
-    data: keys.map((key) => ({
-      seriesId,
-      kind,
-      title,
-      description,
-      date: dayKeyToDate(key),
-      allDay,
-      time,
-      repeat,
-    })),
+    data: keys.map((key) => ({ ...base, seriesId, date: dayKeyToDate(key) })),
   });
 
   const first = await prisma.task.findFirst({
