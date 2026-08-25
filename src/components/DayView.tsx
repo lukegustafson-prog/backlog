@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { REPEAT_LABELS, type Task } from "@/lib/tasks";
 import { formatHour, formatTime, parseHour } from "@/lib/time";
 import EditItemModal, { type EditPayload } from "./EditItemModal";
@@ -16,18 +16,26 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Task | null>(null);
+  const reqRef = useRef(0);
 
   const load = useCallback(async () => {
+    const reqId = ++reqRef.current;
+    const forDate = dateKey;
     setLoading(true);
     try {
-      const res = await fetch(`/api/tasks?date=${dateKey}`);
+      const res = await fetch(`/api/tasks?date=${forDate}`);
       if (!res.ok) throw new Error("failed");
-      setEvents(await res.json());
+      const data = await res.json();
+      // Ignore responses that have been superseded by a newer request, so a
+      // slow earlier fetch can't overwrite fresher data.
+      if (reqId !== reqRef.current) return;
+      setEvents(data);
       setError(null);
     } catch {
+      if (reqId !== reqRef.current) return;
       setError("Could not load events. Is the server running?");
     } finally {
-      setLoading(false);
+      if (reqId === reqRef.current) setLoading(false);
     }
   }, [dateKey]);
 
@@ -39,8 +47,10 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
     const itemHours = events
       .map((t) => parseHour(t.time))
       .filter((h): h is number => h !== null);
-    const min = Math.max(0, Math.min(8, ...itemHours));
-    const max = Math.min(23, Math.max(18, ...itemHours));
+    // Show a fuller day (6 AM–10 PM by default, expanding to fit any events)
+    // so the timeline is scrollable.
+    const min = Math.max(0, Math.min(6, ...itemHours));
+    const max = Math.min(23, Math.max(22, ...itemHours));
     return Array.from({ length: max - min + 1 }, (_, i) => min + i);
   }, [events]);
 
