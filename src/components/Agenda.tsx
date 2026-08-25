@@ -94,10 +94,9 @@ export default function Agenda() {
         /* ignore */
       }
 
-      setDateKey(parsed.date);
-      setView("day");
-
       if (autoAdd) {
+        // Create first, THEN move the view + refresh once, so there's a single
+        // reload with fresh data (no racing pre-create fetch).
         const createRes = await fetch("/api/tasks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -110,12 +109,16 @@ export default function Agenda() {
           }),
         });
         if (createRes.ok) {
+          setDateKey(parsed.date);
+          setView("day");
           setVersion((v) => v + 1);
           showToast(`Added "${parsed.title}"`);
         } else {
           showToast("Couldn't save the event.");
         }
       } else {
+        setDateKey(parsed.date);
+        setView("day");
         setPrefill({ title: parsed.title, time: parsed.time, notes: parsed.notes });
         setModalOpen(true);
       }
