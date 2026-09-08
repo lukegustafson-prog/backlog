@@ -9,11 +9,12 @@ import {
   relativeDayLabel,
   todayKey,
 } from "@/lib/date";
-import { timeString } from "@/lib/time";
+import { onSettingsChange, readBool, VOICE_AUTOADD_KEY } from "@/lib/settings";
+import { effectiveTimezone, partsInZone } from "@/lib/timezone";
 import AddEventModal, { type EventPrefill, type NewEventPayload } from "./AddEventModal";
 import DayView from "./DayView";
 import MonthView from "./MonthView";
-import SettingsMenu, { VOICE_AUTOADD_KEY } from "./SettingsMenu";
+import SettingsMenu from "./SettingsMenu";
 import VoiceCapture from "./VoiceCapture";
 
 type View = "day" | "month";
@@ -21,6 +22,7 @@ type View = "day" | "month";
 export default function Agenda() {
   const [view, setView] = useState<View>("day");
   const [dateKey, setDateKey] = useState(todayKey());
+  const [today, setTodayState] = useState(todayKey());
   const [modalOpen, setModalOpen] = useState(false);
   const [prefill, setPrefill] = useState<EventPrefill | undefined>(undefined);
   const [version, setVersion] = useState(0);
@@ -29,7 +31,18 @@ export default function Agenda() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isMonth = view === "month";
-  const relative = !isMonth ? relativeDayLabel(dateKey) : null;
+  const relative = !isMonth ? relativeDayLabel(dateKey, today) : null;
+
+  // Resolve "today" in the user's selected zone after mount (localStorage isn't
+  // available during SSR). Also open on the correct day for that zone.
+  useEffect(() => {
+    const tzToday = partsInZone(effectiveTimezone()).dateKey;
+    setTodayState(tzToday);
+    setDateKey(tzToday);
+    return onSettingsChange(() => {
+      setTodayState(partsInZone(effectiveTimezone()).dateKey);
+    });
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -62,22 +75,32 @@ export default function Agenda() {
     setVersion((v) => v + 1);
   }
 
+  function keepHeardText(text: string) {
+    // Never lose what was heard: drop the user into the add form with the raw
+    // transcript as the title so they can fix it instead of starting over.
+    setView("day");
+    setPrefill({ title: text });
+    setModalOpen(true);
+  }
+
   async function handleTranscript(text: string) {
     setParsing(true);
     try {
-      const now = new Date();
+      const tz = effectiveTimezone();
+      const { dateKey: tzToday, time: tzTime } = partsInZone(tz);
       const res = await fetch("/api/parse-event", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           transcript: text,
-          todayKey: todayKey(),
-          localTime: timeString(now.getHours(), now.getMinutes()),
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          todayKey: tzToday,
+          localTime: tzTime,
+          timezone: tz,
         }),
       });
       if (!res.ok) {
-        showToast("Sorry, couldn't understand that. Try again.");
+        showToast("Couldn't parse that automatically — here's what I heard.");
+        keepHeardText(text);
         return;
       }
       const parsed = (await res.json()) as {
@@ -87,12 +110,7 @@ export default function Agenda() {
         notes: string;
       };
 
-      let autoAdd = false;
-      try {
-        autoAdd = localStorage.getItem(VOICE_AUTOADD_KEY) === "true";
-      } catch {
-        /* ignore */
-      }
+      const autoAdd = readBool(VOICE_AUTOADD_KEY, false);
 
       if (autoAdd) {
         // Create first, THEN move the view + refresh once, so there's a single
@@ -123,7 +141,8 @@ export default function Agenda() {
         setModalOpen(true);
       }
     } catch {
-      showToast("Something went wrong. Try again.");
+      showToast("Something went wrong — here's what I heard.");
+      keepHeardText(text);
     } finally {
       setParsing(false);
     }
@@ -138,54 +157,54 @@ export default function Agenda() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[393px] px-4 py-3">
-      <div className="mb-3 flex items-center justify-between gap-4">
-        <span className="flex items-center gap-2 text-sm font-semibold text-ink">
-          <span className="grid h-5 w-5 place-items-center rounded-md bg-[#2383e2] text-[10px] text-white">B</span>
-          Backlog
-        </span>
-        <div className="flex items-center gap-1">
-          <SettingsMenu />
-          <button
-            onClick={lock}
-            title="Lock (sign out)"
-            className="rounded-md border border-line px-3 py-1.5 text-sm font-medium text-subtle transition hover:bg-hover hover:text-ink"
-          >
-            Lock
-          </button>
+    <main className="mx-auto flex w-full max-w-[393px] flex-col">
+      <div className="sticky top-0 z-20 border-b border-line bg-canvas px-4 pb-2.5 pt-3">
+        <div className="mb-2.5 flex items-center justify-between gap-4">
+          <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+            <span className="grid h-5 w-5 place-items-center rounded-md bg-[#2383e2] text-[10px] text-white">B</span>
+            Backlog
+          </span>
+          <div className="flex items-center gap-1">
+            <SettingsMenu />
+            <button
+              onClick={lock}
+              title="Lock (sign out)"
+              className="touch-manipulation rounded-md border border-line px-3 py-1.5 text-sm font-medium text-subtle transition hover:bg-hover hover:text-ink active:bg-hover"
+            >
+              Lock
+            </button>
+          </div>
         </div>
-      </div>
 
-      <header className="mb-3">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
+        <header className="mb-2.5 flex items-end justify-between gap-2">
+          <div className="min-w-0">
             {relative && (
               <p className="text-[11px] font-medium uppercase tracking-wide text-[#2383e2]">{relative}</p>
             )}
-            <h1 className="text-lg font-semibold tracking-tight text-ink">
+            <h1 className="truncate text-base font-semibold tracking-tight text-ink">
               {isMonth ? "Calendar" : formatLongDate(dateKey)}
             </h1>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             <button
               aria-label={isMonth ? "Previous month" : "Previous day"}
               onClick={goPrev}
-              className="grid h-9 w-9 place-items-center rounded-md border border-line text-ink transition hover:bg-hover"
+              className="grid h-9 w-9 touch-manipulation place-items-center rounded-md border border-line text-ink transition hover:bg-hover active:bg-hover"
             >
               <ChevronLeft />
             </button>
             <button
-              onClick={() => setDateKey(todayKey())}
+              onClick={() => setDateKey(today)}
               title={isMonth ? "Go to current month" : "Go to today"}
-              className="min-w-[7rem] rounded-md border border-line px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-hover"
+              className="min-w-[5.5rem] touch-manipulation rounded-md border border-line px-2.5 py-1.5 text-sm font-medium text-ink transition hover:bg-hover active:bg-hover"
             >
               {isMonth ? monthLabel(dateKey) : "Today"}
             </button>
             <button
               aria-label={isMonth ? "Next month" : "Next day"}
               onClick={goNext}
-              className="grid h-9 w-9 place-items-center rounded-md border border-line text-ink transition hover:bg-hover"
+              className="grid h-9 w-9 touch-manipulation place-items-center rounded-md border border-line text-ink transition hover:bg-hover active:bg-hover"
             >
               <ChevronRight />
             </button>
@@ -193,51 +212,56 @@ export default function Agenda() {
               aria-label={view === "day" ? "Switch to calendar view" : "Switch to day view"}
               title={view === "day" ? "Calendar view" : "Day view"}
               onClick={() => setView((v) => (v === "day" ? "month" : "day"))}
-              className={`grid h-9 w-9 place-items-center rounded-md border transition ${
+              className={`grid h-9 w-9 touch-manipulation place-items-center rounded-md border transition ${
                 view === "month"
                   ? "border-[#2383e2] bg-[#2383e2]/10 text-[#2383e2]"
-                  : "border-line text-ink hover:bg-hover"
+                  : "border-line text-ink hover:bg-hover active:bg-hover"
               }`}
             >
               {view === "day" ? <CalendarIcon /> : <ListIcon />}
             </button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Voice quick capture */}
-      <div className="mb-3">
-        <VoiceCapture onTranscript={handleTranscript} busy={parsing} />
+        {/* Voice quick capture */}
+        <div className="mb-2 flex items-start gap-2">
+          <div className="flex-1">
+            <VoiceCapture onTranscript={handleTranscript} busy={parsing} label="Speak to add" />
+          </div>
+          <button
+            onClick={() => {
+              setPrefill(undefined);
+              setModalOpen(true);
+            }}
+            aria-label="Add event manually"
+            title="Add event manually"
+            className="grid h-11 w-12 shrink-0 touch-manipulation place-items-center rounded-lg border border-dashed border-line text-lg font-medium text-subtle transition hover:border-[#2383e2] hover:text-[#2383e2] active:bg-hover"
+          >
+            +
+          </button>
+        </div>
       </div>
 
-      <button
-        onClick={() => {
-          setPrefill(undefined);
-          setModalOpen(true);
-        }}
-        className="mb-4 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-line px-4 py-2.5 text-sm font-medium text-subtle transition hover:border-[#2383e2] hover:text-[#2383e2]"
-      >
-        <span className="text-lg leading-none">+</span> Add event manually
-      </button>
+      <div className="px-4 pb-8 pt-3">
+        {toast && (
+          <div className="mb-3 rounded-md border border-[#2383e2]/30 bg-[#2383e2]/10 px-4 py-2.5 text-sm text-ink">
+            {toast}
+          </div>
+        )}
 
-      {toast && (
-        <div className="mb-4 rounded-md border border-[#2383e2]/30 bg-[#2383e2]/10 px-4 py-2.5 text-sm text-ink">
-          {toast}
-        </div>
-      )}
-
-      {view === "day" ? (
-        <DayView dateKey={dateKey} version={version} onChanged={() => setVersion((v) => v + 1)} />
-      ) : (
-        <MonthView
-          dateKey={dateKey}
-          version={version}
-          onSelectDay={(key) => {
-            setDateKey(key);
-            setView("day");
-          }}
-        />
-      )}
+        {view === "day" ? (
+          <DayView dateKey={dateKey} version={version} onChanged={() => setVersion((v) => v + 1)} />
+        ) : (
+          <MonthView
+            dateKey={dateKey}
+            version={version}
+            onSelectDay={(key) => {
+              setDateKey(key);
+              setView("day");
+            }}
+          />
+        )}
+      </div>
 
       {modalOpen && (
         <AddEventModal

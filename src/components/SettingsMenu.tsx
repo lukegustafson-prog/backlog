@@ -1,22 +1,32 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  SHOW_NOTES_KEY,
+  THEME_KEY,
+  TIMEZONE_KEY,
+  VOICE_AUTOADD_KEY,
+  readBool,
+  writeBool,
+  writeString,
+} from "@/lib/settings";
+import { US_TIMEZONES, deviceTimezone, savedTimezone } from "@/lib/timezone";
 
-const THEME_KEY = "backlog-theme";
-export const VOICE_AUTOADD_KEY = "backlog-voice-autoadd";
+// Re-exported for existing imports.
+export { VOICE_AUTOADD_KEY };
 
 export default function SettingsMenu() {
   const [open, setOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const [autoAdd, setAutoAdd] = useState(false);
+  const [showNotes, setShowNotes] = useState(true);
+  const [timezone, setTimezone] = useState("");
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));
-    try {
-      setAutoAdd(localStorage.getItem(VOICE_AUTOADD_KEY) === "true");
-    } catch {
-      /* ignore */
-    }
+    setAutoAdd(readBool(VOICE_AUTOADD_KEY, false));
+    setShowNotes(readBool(SHOW_NOTES_KEY, true));
+    setTimezone(savedTimezone());
   }, []);
 
   function setTheme(nextDark: boolean) {
@@ -31,11 +41,17 @@ export default function SettingsMenu() {
 
   function setVoiceAutoAdd(next: boolean) {
     setAutoAdd(next);
-    try {
-      localStorage.setItem(VOICE_AUTOADD_KEY, next ? "true" : "false");
-    } catch {
-      /* ignore */
-    }
+    writeBool(VOICE_AUTOADD_KEY, next);
+  }
+
+  function setNotesVisible(next: boolean) {
+    setShowNotes(next);
+    writeBool(SHOW_NOTES_KEY, next);
+  }
+
+  function setZone(next: string) {
+    setTimezone(next);
+    writeString(TIMEZONE_KEY, next);
   }
 
   return (
@@ -54,13 +70,21 @@ export default function SettingsMenu() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-line bg-surface p-3 shadow-xl">
+          <div className="absolute right-0 z-50 mt-2 w-72 rounded-lg border border-line bg-surface p-3 shadow-xl">
             <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-subtle">
               Settings
             </p>
 
             <Row label="Dark mode">
               <Switch checked={dark} onChange={() => setTheme(!dark)} ariaLabel="Dark mode" />
+            </Row>
+
+            <Row label="Show notes" hint="Show notes on events and forms">
+              <Switch
+                checked={showNotes}
+                onChange={() => setNotesVisible(!showNotes)}
+                ariaLabel="Show notes"
+              />
             </Row>
 
             <Row label="Auto-add voice events" hint="Off: review before saving">
@@ -70,6 +94,23 @@ export default function SettingsMenu() {
                 ariaLabel="Auto-add voice events"
               />
             </Row>
+
+            <div className="rounded-md px-1 py-1.5">
+              <p className="text-sm text-ink">Time zone</p>
+              <select
+                aria-label="Time zone"
+                value={timezone}
+                onChange={(e) => setZone(e.target.value)}
+                className="mt-1.5 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink outline-none focus:border-[#2383e2]"
+              >
+                <option value="">Automatic ({deviceTimezone()})</option>
+                {US_TIMEZONES.map((tz) => (
+                  <option key={tz.id} value={tz.id}>
+                    {tz.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </>
       )}

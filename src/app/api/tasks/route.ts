@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isRepeat, type Repeat, type CustomUnit, CUSTOM_UNITS } from "@/lib/tasks";
+import { isRepeat, isHexColor, DEFAULT_EVENT_COLOR, type Repeat, type CustomUnit, CUSTOM_UNITS } from "@/lib/tasks";
 import { prisma } from "@/lib/prisma";
 import { addDaysKey, dayKeyToDate, isValidDayKey } from "@/lib/date";
 import { isValidTime } from "@/lib/time";
@@ -100,8 +100,9 @@ export async function POST(request: Request) {
   const time = data.time as string;
   const description = typeof data.description === "string" ? data.description.trim() : "";
   const repeat: Repeat = isRepeat(data.repeat) ? data.repeat : "none";
+  const color = isHexColor(data.color) ? data.color : DEFAULT_EVENT_COLOR;
 
-  const base = { kind: "event", title, description, allDay: false, time, repeat };
+  const base = { kind: "event", title, description, allDay: false, time, repeat, color };
 
   if (repeat === "none") {
     const event = await prisma.task.create({

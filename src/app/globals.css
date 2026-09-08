@@ -45,3 +45,14 @@ body {
 * {
   -webkit-font-smoothing: antialiased;
 }
+
+/* Remove the 300ms tap delay and double-tap zoom on interactive controls. */
+button,
+a,
+select,
+input,
+textarea,
+[role="button"],
+[role="switch"] {
+  touch-action: manipulation;
+}

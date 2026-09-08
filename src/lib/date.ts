@@ -53,8 +53,7 @@ export function formatShortDate(key: string): string {
   }).format(dayKeyToDate(key));
 }
 
-export function relativeDayLabel(key: string): string | null {
-  const today = todayKey();
+export function relativeDayLabel(key: string, today: string = todayKey()): string | null {
   if (key === today) return "Today";
   if (key === addDaysKey(today, 1)) return "Tomorrow";
   if (key === addDaysKey(today, -1)) return "Yesterday";

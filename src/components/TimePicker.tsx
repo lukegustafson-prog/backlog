@@ -14,6 +14,10 @@ export default function TimePicker({ value, onChange }: TimePickerProps) {
   const minute = parseMinute(value) ?? 0;
   const { hour, ampm } = to12(hour24);
 
+  // Keep the picker usable if a value lands off the 5-minute grid (e.g. a time
+  // set by voice) by including that exact minute as an extra option.
+  const minuteOptions = MINUTES.includes(minute) ? MINUTES : [...MINUTES, minute].sort((a, b) => a - b);
+
   function update(nextHour: number, nextMinute: number, nextAmPm: AmPm) {
     onChange(timeString(from12(nextHour, nextAmPm), nextMinute));
   }
@@ -42,7 +46,7 @@ export default function TimePicker({ value, onChange }: TimePickerProps) {
         onChange={(e) => update(hour, Number(e.target.value), ampm)}
         className={selectClass}
       >
-        {MINUTES.map((m) => (
+        {minuteOptions.map((m) => (
           <option key={m} value={m}>
             {String(m).padStart(2, "0")}
           </option>

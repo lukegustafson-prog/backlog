@@ -53,4 +53,18 @@ export function formatTime(time: string): string {
 }
 
 export const HOURS_12 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
-export const MINUTES = Array.from({ length: 60 }, (_, i) => i);
+
+/** Minute step used by the manual time picker. */
+export const MINUTE_STEP = 5;
+export const MINUTES = Array.from({ length: 60 / MINUTE_STEP }, (_, i) => i * MINUTE_STEP);
+
+/** Round a "HH:MM" string to the nearest MINUTE_STEP (default 5) minutes. */
+export function roundTimeToStep(time: string, step: number = MINUTE_STEP): string {
+  const hour = parseHour(time);
+  const minute = parseMinute(time);
+  if (hour === null || minute === null) return time;
+  const total = hour * 60 + minute;
+  const rounded = Math.round(total / step) * step;
+  const clamped = Math.min(rounded, 23 * 60 + 55);
+  return timeString(Math.floor(clamped / 60), clamped % 60);
+}

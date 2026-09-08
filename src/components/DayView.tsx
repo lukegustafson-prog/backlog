@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { REPEAT_LABELS, type Task } from "@/lib/tasks";
+import { DEFAULT_EVENT_COLOR, isHexColor, REPEAT_LABELS, type Task } from "@/lib/tasks";
 import { formatHour, formatTime, parseHour } from "@/lib/time";
+import { SHOW_NOTES_KEY, onSettingsChange, readBool } from "@/lib/settings";
 import EditItemModal, { type EditPayload } from "./EditItemModal";
 
 interface DayViewProps {
@@ -16,7 +17,14 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Task | null>(null);
+  const [showNotes, setShowNotes] = useState(true);
   const reqRef = useRef(0);
+
+  useEffect(() => {
+    const sync = () => setShowNotes(readBool(SHOW_NOTES_KEY, true));
+    sync();
+    return onSettingsChange(sync);
+  }, []);
 
   const load = useCallback(async () => {
     const reqId = ++reqRef.current;
@@ -94,6 +102,7 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
           description: payload.description,
           allDay: false,
           time: payload.time,
+          color: payload.color,
         }),
       });
       onChanged();
@@ -134,45 +143,54 @@ export default function DayView({ dateKey, version, onChanged }: DayViewProps) {
                   <span className="absolute inset-y-0 w-px bg-line" />
                   <span
                     className={`relative mt-[11px] h-2.5 w-2.5 rounded-full ring-2 ring-canvas ${
-                      items.length > 0 ? "bg-[#2383e2]" : "bg-line"
+                      items.length === 0 ? "bg-line" : ""
                     }`}
+                    style={
+                      items.length > 0
+                        ? { backgroundColor: isHexColor(items[0].color) ? items[0].color : DEFAULT_EVENT_COLOR }
+                        : undefined
+                    }
                   />
                 </div>
                 <div className="min-h-[2.5rem] flex-1 space-y-1.5 py-1">
-                  {items.map((event) => (
-                    <button
-                      key={event.id}
-                      onClick={() => setEditing(event)}
-                      aria-label={`Edit ${event.title}`}
-                      className="flex w-full items-start gap-2 rounded-lg border border-line bg-surface px-2.5 py-2 text-left transition hover:bg-hover"
-                    >
-                      <span aria-hidden className="mt-1 grid h-3.5 w-3.5 shrink-0 place-items-center">
-                        <span className="h-2 w-2 rounded-[2px] bg-[#9b59d0]" />
-                      </span>
+                  {items.map((event) => {
+                    const eventColor = isHexColor(event.color) ? event.color : DEFAULT_EVENT_COLOR;
+                    return (
+                      <button
+                        key={event.id}
+                        onClick={() => setEditing(event)}
+                        aria-label={`Edit ${event.title}`}
+                        style={{ borderLeftColor: eventColor }}
+                        className="flex w-full touch-manipulation items-start gap-2 rounded-lg border border-line border-l-[3px] bg-surface px-2.5 py-2 text-left transition hover:bg-hover active:bg-hover"
+                      >
+                        <span aria-hidden className="mt-1 grid h-3.5 w-3.5 shrink-0 place-items-center">
+                          <span className="h-2 w-2 rounded-[2px]" style={{ backgroundColor: eventColor }} />
+                        </span>
 
-                      <span className="mt-px shrink-0 rounded bg-hover px-1.5 py-0.5 text-[11px] font-medium text-subtle">
-                        {formatTime(event.time)}
-                      </span>
+                        <span className="mt-px shrink-0 rounded bg-hover px-1.5 py-0.5 text-[11px] font-medium text-subtle">
+                          {formatTime(event.time)}
+                        </span>
 
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-start gap-1.5">
-                          <span className="flex-1 break-words text-sm leading-snug text-ink">
-                            {event.title}
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-start gap-1.5">
+                            <span className="flex-1 break-words text-sm leading-snug text-ink">
+                              {event.title}
+                            </span>
+                            {event.repeat !== "none" && (
+                              <span title={REPEAT_LABELS[event.repeat]} className="mt-0.5 shrink-0 text-subtle">
+                                <RepeatIcon />
+                              </span>
+                            )}
                           </span>
-                          {event.repeat !== "none" && (
-                            <span title={REPEAT_LABELS[event.repeat]} className="mt-0.5 shrink-0 text-subtle">
-                              <RepeatIcon />
+                          {showNotes && event.description && (
+                            <span className="mt-0.5 block break-words text-xs leading-snug text-subtle">
+                              {event.description}
                             </span>
                           )}
                         </span>
-                        {event.description && (
-                          <span className="mt-0.5 block break-words text-xs leading-snug text-subtle">
-                            {event.description}
-                          </span>
-                        )}
-                      </span>
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             );
