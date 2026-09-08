@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { isRepeat } from "@/lib/tasks";
+import { isRepeat, isHexColor } from "@/lib/tasks";
 import { isValidDayKey, dayKeyToDate } from "@/lib/date";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -36,6 +36,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
   if (typeof data.time === "string") {
     update.time = data.time;
+  }
+  if (data.color !== undefined) {
+    if (!isHexColor(data.color)) {
+      return NextResponse.json({ error: "Invalid color" }, { status: 400 });
+    }
+    update.color = data.color;
   }
   if (data.repeat !== undefined) {
     if (!isRepeat(data.repeat)) {

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Task } from "@/lib/tasks";
+import { DEFAULT_EVENT_COLOR, EVENT_COLORS, isHexColor, type Task } from "@/lib/tasks";
 import { formatLongDate } from "@/lib/date";
 import { isValidTime } from "@/lib/time";
+import { SHOW_NOTES_KEY, readBool } from "@/lib/settings";
 import TimePicker from "./TimePicker";
 
 export interface EditPayload {
@@ -11,6 +12,7 @@ export interface EditPayload {
   description: string;
   allDay: boolean;
   time: string;
+  color: string;
 }
 
 interface EditItemModalProps {
@@ -24,7 +26,13 @@ export default function EditItemModal({ task, onClose, onSave, onDelete }: EditI
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
   const [time, setTime] = useState(isValidTime(task.time) ? task.time : "09:00");
+  const [color, setColor] = useState(isHexColor(task.color) ? task.color : DEFAULT_EVENT_COLOR);
+  const [showNotes, setShowNotes] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setShowNotes(readBool(SHOW_NOTES_KEY, true));
+  }, []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -39,7 +47,7 @@ export default function EditItemModal({ task, onClose, onSave, onDelete }: EditI
     if (!title.trim() || saving) return;
     setSaving(true);
     try {
-      await onSave({ title: title.trim(), description: description.trim(), allDay: false, time });
+      await onSave({ title: title.trim(), description: description.trim(), allDay: false, time, color });
     } finally {
       setSaving(false);
     }
@@ -74,16 +82,43 @@ export default function EditItemModal({ task, onClose, onSave, onDelete }: EditI
             </div>
 
             <div className="flex items-start gap-3">
-              <span className="w-16 shrink-0 pt-2 text-sm text-subtle">Notes</span>
-              <textarea
-                aria-label="Notes"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Add notes"
-                rows={3}
-                className="flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-[#2383e2]"
-              />
+              <span className="w-16 shrink-0 pt-1.5 text-sm text-subtle">Color</span>
+              <div className="flex flex-wrap gap-2">
+                {EVENT_COLORS.map((c) => {
+                  const active = color.toLowerCase() === c.value.toLowerCase();
+                  return (
+                    <button
+                      key={c.value}
+                      type="button"
+                      aria-label={c.label}
+                      aria-pressed={active}
+                      title={c.label}
+                      onClick={() => setColor(c.value)}
+                      style={{ backgroundColor: c.value }}
+                      className={`h-7 w-7 rounded-full transition ${
+                        active
+                          ? "ring-2 ring-ink ring-offset-2 ring-offset-surface"
+                          : "ring-1 ring-line hover:scale-110"
+                      }`}
+                    />
+                  );
+                })}
+              </div>
             </div>
+
+            {showNotes && (
+              <div className="flex items-start gap-3">
+                <span className="w-16 shrink-0 pt-2 text-sm text-subtle">Notes</span>
+                <textarea
+                  aria-label="Notes"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Add notes"
+                  rows={3}
+                  className="flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-[#2383e2]"
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-between gap-2 border-t border-line px-5 py-3">

@@ -19,7 +19,7 @@ Return ONLY strict JSON with these keys:
 - "date": the event date as "YYYY-MM-DD"
 - "time": the start time as 24-hour "HH:MM"
 - "notes": any extra detail, or "" if none
-Resolve relative expressions ("today", "tonight", "tomorrow", "next Monday", "in an hour") using the provided current date/time. If no time is stated, use "09:00". If no date is stated, use the current date. Keep the title short; put reminders/extra detail in notes.`;
+Resolve relative expressions ("today", "tonight", "tomorrow", "next Monday", "in an hour") using the provided current date/time. If no time is stated, use the provided current local time. If no date is stated, use the current date. Keep the title short; put reminders/extra detail in notes.`;
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -39,12 +39,13 @@ function deriveTitle(transcript: string, matched: string | null): string {
 }
 
 function fallbackParse(transcript: string, refKey: string, refTime: string): ParsedEvent {
-  const ref = new Date(`${refKey}T${isValidTime(refTime) ? refTime : "12:00"}:00`);
+  const defaultTime = isValidTime(refTime) ? refTime : "12:00";
+  const ref = new Date(`${refKey}T${defaultTime}:00`);
   const results = chrono.parse(transcript, ref, { forwardDate: true });
   const r = results[0];
 
   let date = refKey;
-  let time = "09:00";
+  let time = defaultTime;
   if (r) {
     const s = r.start;
     const y = s.get("year");
@@ -58,7 +59,7 @@ function fallbackParse(transcript: string, refKey: string, refTime: string): Par
   return {
     title: deriveTitle(transcript, r ? r.text : null),
     date: isValidDayKey(date) ? date : refKey,
-    time: isValidTime(time) ? time : "09:00",
+    time: isValidTime(time) ? time : defaultTime,
     notes: "",
     source: "fallback",
   };
@@ -101,9 +102,10 @@ async function llmParse(
     if (typeof content !== "string") return null;
     const parsed = JSON.parse(content) as Record<string, unknown>;
 
+    const defaultTime = isValidTime(refTime) ? refTime : "09:00";
     const title = typeof parsed.title === "string" && parsed.title.trim() ? parsed.title.trim() : "New event";
     const date = typeof parsed.date === "string" && isValidDayKey(parsed.date) ? parsed.date : refKey;
-    const time = typeof parsed.time === "string" && isValidTime(parsed.time) ? parsed.time : "09:00";
+    const time = typeof parsed.time === "string" && isValidTime(parsed.time) ? parsed.time : defaultTime;
     const notes = typeof parsed.notes === "string" ? parsed.notes.trim() : "";
     return { title, date, time, notes, source: "llm" };
   } catch {

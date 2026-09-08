@@ -20,6 +20,7 @@ model Task {
   time        String   @default("")
   completed   Boolean  @default(false)
   repeat      String   @default("none")
+  color       String   @default("#2383e2")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

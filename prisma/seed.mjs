@@ -16,10 +16,10 @@ const today = new Date().toISOString().slice(0, 10);
 const d = (n) => dayKeyToDate(addDaysKey(today, n));
 
 const seedEvents = [
-  { title: "Morning standup", date: d(0), time: "09:00", description: "Share yesterday's progress" },
-  { title: "Team lunch", date: d(0), time: "12:30", description: "" },
-  { title: "Dentist appointment", date: d(0), time: "15:00", description: "Bring insurance card" },
-  { title: "Yoga class", date: d(1), time: "18:00", description: "" },
+  { title: "Morning standup", date: d(0), time: "09:00", description: "Share yesterday's progress", color: "#2383e2" },
+  { title: "Team lunch", date: d(0), time: "12:30", description: "", color: "#2f9e6b" },
+  { title: "Dentist appointment", date: d(0), time: "15:00", description: "Bring insurance card", color: "#e0803a" },
+  { title: "Yoga class", date: d(1), time: "18:00", description: "", color: "#9b59d0" },
 ];
 
 async function main() {

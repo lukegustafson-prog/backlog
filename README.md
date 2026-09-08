@@ -20,6 +20,17 @@ Adding an item opens a Google-Calendar-style dialog where you pick the kind, set
 
 Toggle the calendar icon to switch to a **month calendar view** that colours each day by task completion: **green** when ≥ 80% of that day's tasks are done, **yellow** at ≥ 50%, and **red** below 50%. Click any day to jump back to its agenda.
 
+## Settings
+
+A gear menu (top-right) holds per-device preferences, remembered in `localStorage`:
+
+- **Dark mode** — light/dark theme toggle.
+- **Show notes** — hide the notes field on forms and on events for a cleaner list.
+- **Auto-add voice events** — when off, review a voice-captured event before saving.
+- **Time zone** — pick a US zone (or Automatic). New events default to the current time in this zone, and voice parsing resolves "today"/"now" against it.
+
+New events default their time to **now** (rounded to 5 minutes); the manual time picker steps in 5-minute increments. Open an event to change its **color**.
+
 ## Tech stack
 
 - **Next.js 15** (App Router) + **React 19** + **TypeScript**
@@ -84,6 +95,12 @@ The whole app is behind a single shared password. Unauthenticated visitors are r
 ## Deployment (Vercel + Turso)
 
 Local dev uses the SQLite file; **production uses a hosted [Turso](https://turso.tech) database** (libSQL, SQLite-compatible) so data persists and syncs across devices. `src/lib/prisma.ts` automatically uses Turso when `TURSO_DATABASE_URL` is set, otherwise it falls back to the local SQLite file.
+
+> **Upgrading an existing Turso database:** if you created the `Task` table before the `color` column existed, run this once so the app can read/write event colors:
+>
+> ```sql
+> ALTER TABLE "Task" ADD COLUMN "color" TEXT NOT NULL DEFAULT '#2383e2';
+> ```
 
 One-time setup:
 

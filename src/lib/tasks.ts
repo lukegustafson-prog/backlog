@@ -47,8 +47,28 @@ export interface Task {
   time: string;
   completed: boolean;
   repeat: Repeat;
+  /** Hex color for the event, e.g. "#2383e2". */
+  color: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export const DEFAULT_EVENT_COLOR = "#2383e2";
+
+/** Preset colors offered when changing an event's color. */
+export const EVENT_COLORS: { value: string; label: string }[] = [
+  { value: "#2383e2", label: "Blue" },
+  { value: "#9b59d0", label: "Purple" },
+  { value: "#2f9e6b", label: "Green" },
+  { value: "#e0803a", label: "Orange" },
+  { value: "#e2483d", label: "Red" },
+  { value: "#d9a520", label: "Yellow" },
+  { value: "#d6489b", label: "Pink" },
+  { value: "#64748b", label: "Gray" },
+];
+
+export function isHexColor(value: unknown): value is string {
+  return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value);
 }
 
 export const WEEKDAY_SHORT = ["S", "M", "T", "W", "T", "F", "S"];

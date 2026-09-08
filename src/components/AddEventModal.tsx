@@ -10,6 +10,9 @@ import {
   type Repeat,
 } from "@/lib/tasks";
 import { addMonthsKey, formatLongDate, weekdayOf } from "@/lib/date";
+import { roundTimeToStep } from "@/lib/time";
+import { effectiveTimezone, partsInZone } from "@/lib/timezone";
+import { SHOW_NOTES_KEY, readBool } from "@/lib/settings";
 import TimePicker from "./TimePicker";
 
 export interface NewEventPayload {
@@ -47,7 +50,11 @@ const UNIT_LABELS: Record<CustomUnit, string> = { day: "day", week: "week", mont
 export default function AddEventModal({ dateKey, prefill, onClose, onCreate }: AddEventModalProps) {
   const [title, setTitle] = useState(prefill?.title ?? "");
   const [notes, setNotes] = useState(prefill?.notes ?? "");
-  const [time, setTime] = useState(prefill?.time ?? "09:00");
+  // Default to the current time (rounded to 5 min) instead of a fixed 9 AM.
+  const [time, setTime] = useState(
+    prefill?.time ?? roundTimeToStep(partsInZone(effectiveTimezone()).time),
+  );
+  const [showNotes, setShowNotes] = useState(true);
   const [repeat, setRepeat] = useState<Repeat>("none");
   const [occurrences, setOccurrences] = useState(10);
   const [saving, setSaving] = useState(false);
@@ -59,6 +66,10 @@ export default function AddEventModal({ dateKey, prefill, onClose, onCreate }: A
   const [endType, setEndType] = useState<"count" | "until">("count");
   const [customCount, setCustomCount] = useState(10);
   const [until, setUntil] = useState(addMonthsKey(dateKey, 1));
+
+  useEffect(() => {
+    setShowNotes(readBool(SHOW_NOTES_KEY, true));
+  }, []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -82,7 +93,7 @@ export default function AddEventModal({ dateKey, prefill, onClose, onCreate }: A
       await onCreate({
         title: title.trim(),
         date: dateKey,
-        description: notes.trim(),
+        description: showNotes ? notes.trim() : "",
         time,
         repeat,
         occurrences,
@@ -124,17 +135,19 @@ export default function AddEventModal({ dateKey, prefill, onClose, onCreate }: A
               <TimePicker value={time} onChange={setTime} />
             </div>
 
-            <div className="flex items-start gap-3">
-              <span className="w-24 shrink-0 pt-2 text-sm text-subtle">Notes</span>
-              <textarea
-                aria-label="Notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add notes (optional)"
-                rows={2}
-                className="flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-[#2383e2]"
-              />
-            </div>
+            {showNotes && (
+              <div className="flex items-start gap-3">
+                <span className="w-24 shrink-0 pt-2 text-sm text-subtle">Notes</span>
+                <textarea
+                  aria-label="Notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add notes (optional)"
+                  rows={2}
+                  className="flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-[#2383e2]"
+                />
+              </div>
+            )}
 
             <div className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-sm text-subtle">Repeat</span>

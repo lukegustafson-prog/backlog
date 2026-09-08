@@ -45,12 +45,26 @@ export default function VoiceCapture({ onTranscript, busy, label = "Speak to add
   cbRef.current = onTranscript;
   const gotFinalRef = useRef(false);
   const errorRef = useRef(false);
+  const heardRef = useRef("");
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearTimer = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = null;
   };
+
+  // Deliver the best transcript we have exactly once, even if it only ever
+  // arrived as interim results before an error/timeout. Returns true if it
+  // salvaged something so callers can skip showing a destructive error.
+  const deliverHeard = useCallback(() => {
+    if (gotFinalRef.current) return true;
+    const text = heardRef.current.trim();
+    if (!text) return false;
+    gotFinalRef.current = true;
+    clearTimer();
+    cbRef.current(text);
+    return true;
+  }, []);
 
   useEffect(() => {
     const w = window as unknown as {
@@ -71,6 +85,7 @@ export default function VoiceCapture({ onTranscript, busy, label = "Speak to add
     rec.onstart = () => {
       gotFinalRef.current = false;
       errorRef.current = false;
+      heardRef.current = "";
       setHeard("");
       setNote(null);
     };
@@ -83,7 +98,9 @@ export default function VoiceCapture({ onTranscript, busy, label = "Speak to add
         if (res.isFinal) final += text;
         else interim += text;
       }
-      setHeard(final || interim);
+      const best = final || interim;
+      heardRef.current = best;
+      setHeard(best);
       if (final.trim()) {
         gotFinalRef.current = true;
         clearTimer();
@@ -99,13 +116,19 @@ export default function VoiceCapture({ onTranscript, busy, label = "Speak to add
       errorRef.current = true;
       clearTimer();
       setListening(false);
+      // If we already heard something, don't throw the transcript away just
+      // because the engine reported an error afterward — use what we captured.
+      if (deliverHeard()) return;
       const code = event?.error ?? "";
       setNote(ERROR_MESSAGES[code] ?? "Voice input failed. Try again, or type the event.");
     };
     rec.onend = () => {
       clearTimer();
       setListening(false);
-      if (!gotFinalRef.current && !errorRef.current) {
+      if (gotFinalRef.current) return;
+      // No final result arrived, but if interim text was captured, use it.
+      if (deliverHeard()) return;
+      if (!errorRef.current) {
         setNote("Didn't catch that — try again, or type the event below.");
       }
     };
@@ -118,7 +141,7 @@ export default function VoiceCapture({ onTranscript, busy, label = "Speak to add
         /* ignore */
       }
     };
-  }, []);
+  }, [deliverHeard]);
 
   const toggle = useCallback(() => {
     const rec = recRef.current;
@@ -149,7 +172,8 @@ export default function VoiceCapture({ onTranscript, busy, label = "Speak to add
             /* ignore */
           }
           setListening(false);
-          if (!gotFinalRef.current && !errorRef.current) {
+          if (deliverHeard()) return;
+          if (!errorRef.current) {
             setNote(
               "No response from the speech service. Your browser may not support voice input — try Chrome, or type the event below.",
             );
@@ -160,7 +184,7 @@ export default function VoiceCapture({ onTranscript, busy, label = "Speak to add
       setListening(false);
       clearTimer();
     }
-  }, [listening]);
+  }, [listening, deliverHeard]);
 
   if (!supported) {
     return (
